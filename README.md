@@ -9,7 +9,7 @@ You can also look for examples in examples/*.lnasm
 ## Translate to NASM code
 To translate to NASM you need to execute this command:
 
-"python3 *path to LNASM folder*/main.py --name *your file* --outfile *outfile name*"
+"python3 *path_to_LNASM*/main.py --name *your_file* --outfile *outfile_name*"
 
 ### Auto compile NASM code to elf64
 
