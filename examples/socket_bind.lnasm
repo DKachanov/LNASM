@@ -1,0 +1,38 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stringf64.asm
+#append NASMLibs/file64.asm
+#append NASMLibs/socket64.asm
+
+#syntax PyLibs/socket.py
+#global _start
+
+::_start
+    
+    socketAddr SA[]
+    const SA.len = $ - SA
+    socketAddr UA[socket.AF_INET, 127.0.0.1, 3005, 0]
+    const UA.len = $ - UA
+
+    RES byte buffer[255]
+
+    qword sock
+    qword conn
+
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    rax -> [sock]
+    socket.bind(qword [sock], UA, UA.len)
+    socket.listen(qword [sock], 1)
+    socket.accept(qword [sock], 0, 0)
+    rax -> [conn]
+
+
+    socket.recv(qword [conn], buffer, 255)
+    stringf.len(buffer)
+    stdio.print(buffer, rax)
+
+    socket.close(qword [conn], socket.SHUT_RDWR)
+    socket.close(qword [sock], socket.SHUT_RDWR)
+
+::end
+    stdf.exit(0)

@@ -1,0 +1,27 @@
+#append NASMLibs/stringf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/time64.asm
+
+#global _start
+
+RES byte number[21]
+
+RES qword T_STRUCT[4]
+
+::_start
+    time.time(T_STRUCT)
+
+    time.sleep(1, 500000000) ; s, ns
+
+    time.time(T_STRUCT+16)
+
+    time.sub(T_STRUCT+16, T_STRUCT)
+
+    stringf.T_convert(T_STRUCT+16, number)
+    stringf.len(number)
+    stdio.print(number, rax)
+
+
+::end
+    stdf.exit(0)

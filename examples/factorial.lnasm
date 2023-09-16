@@ -1,0 +1,17 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/math64.asm
+#global _start
+
+qword a = 5
+RES byte num[21]
+
+::_start
+    math.factorial(qword [a])
+    stringf.NumToStr(rax, num)
+    stringf.len(num)
+    stdio.print(num, rax)
+    
+::end
+    stdf.exit(0)

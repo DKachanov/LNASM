@@ -1,0 +1,16 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#global _start
+
+byte d
+
+::_start
+    3 -> rax
+    4 -> rbx
+    add rax, rbx
+    stringf.NumToStr(rax, d)
+    stdio.print(d, 1)
+
+::end
+    stdf.exit(0)

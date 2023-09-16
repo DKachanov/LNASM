@@ -1,0 +1,25 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#append NASMLibs/file64.asm
+
+#syntax PyLibs/stdf.py
+
+#global _start
+
+#define NULL 0
+
+RES byte T[21]
+
+::_start
+
+    statbuf stat
+
+    file.stat(undefined "data.txt", stat)
+    stringf.NumToStr(qword [stat.size], T)
+    stringf.len(T)
+    stdio.print(T, rax)
+
+
+::end
+    stdf.exit(0)

@@ -1,0 +1,19 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#global _start
+
+qword a = 5
+float qword b = 5.0
+string c = "not equal"
+const len = $ - c
+
+::_start
+
+    if float qword [b] == qword [a]: equal
+    stdio.print(c, len)
+    jmp end
+::equal
+    stdio.print(c+4, len-4)
+
+::end
+    stdf.exit(0)

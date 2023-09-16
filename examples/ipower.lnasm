@@ -1,0 +1,17 @@
+#append NASMLibs/math64.asm
+#append NASMLibs/stringf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+
+#global _start
+
+RES byte number[21]
+
+::_start
+    math.ipower(qword 3, 3)
+    stringf.NumToStr(rax, number)
+    stringf.len(number)
+    stdio.print(number, rax)
+
+::end
+    stdf.exit(0)

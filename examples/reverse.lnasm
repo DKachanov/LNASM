@@ -1,0 +1,16 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/array64.asm
+#global _start
+
+list byte a = ["1", "2", "3"]
+;QWORD (int) a.len = 3
+;QWORD (int) a.type = 0 [0 -> 3]
+
+::_start
+    array.reverse(a, 3, 0)
+    stdio.print(a, 3)
+    
+
+::end
+    stdf.exit(0)

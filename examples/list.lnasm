@@ -1,0 +1,18 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#global _start
+
+list byte x = ["0", "1", "2", "3"]
+
+::_start
+
+    if byte [x.type] == 0: _byte
+    ;else
+    jmp end
+
+    ::_byte
+    stdio.print(x, qword [x.len])
+
+::end  
+    stdf.exit(0)
+

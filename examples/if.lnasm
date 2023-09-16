@@ -1,0 +1,20 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/math64.asm
+#global _start
+
+qword a = 5
+string b = "not equal"
+const len = $ - b
+
+::_start
+    math.factorial(qword [a])
+
+    if rax == 120: equal
+    stdio.print(b, len)
+    jmp end
+::equal
+    stdio.print(b+4, len-4)
+
+::end
+    stdf.exit(0)

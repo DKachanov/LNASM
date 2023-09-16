@@ -1,0 +1,19 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#append NASMLibs/stdio64.asm
+#global _start
+
+qword x = 1234
+qword String
+qword length
+
+::_start
+
+    stringf.NumToStr(qword [x], String)
+    stringf.len(String)
+    
+    rax -> [length]
+    stdio.print(qword [String], qword [length])
+::end  
+    stdf.exit(0)
+

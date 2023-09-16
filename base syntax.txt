@@ -1,0 +1,117 @@
+datatypes:
+	byte
+	word (short)
+	dword (int)
+	qword (long)
+	string (char)
+	float (float)
+	list (all int types)
+	notdefined "..." -> creates an undefined string
+
+examples:
+	byte a = "\n"
+	word b
+	dword c = 3007
+	string d = "some text"
+	float e = 5.4
+	list byte f = [30h, 31h, ...]
+	!also list have this info:
+		length: qword [f.len]
+		type: qword [f.type]
+			byte = 0
+			word = 1
+			dword = 2
+			qword = 3
+	stdio.print(undefined "Hello, world!\n", 14)
+	etc.
+
+constants:
+	const *var* = ...
+
+	examples:
+		const str.len = $ - str
+
+reserve:
+	RES *datatype* value[*number*]
+
+	examples:
+		RES byte input_string[255]
+		RES qword pointer[1]
+
+instructions:
+	push something
+	call function
+	jmp point
+	int 0x80
+	syscall
+	ret
+	call decorator:
+		function(a, c+3, ...)
+	mov decorator:
+		3 -> rax
+	math:
+		operations:
+			add, sub, mul, div
+			#for float
+			fadd, fsub, fmul, fdiv
+			
+			*reg or (only integer) var*++
+			*reg or (only integer) var*--
+		examples:
+			add eax, 4
+			fadd int rbx, qword [a], qword [a]  
+			rax++
+			rcx--
+	fti qword [a], qword [a]
+	#float to int
+
+
+comments:
+	; ...
+
+adding *.asm files:
+	#append *path*
+	appends asm file to main file
+
+adding *.py files:
+	#syntax *path*
+	inserts syntax into main syntax
+
+
+globalizing variables:
+	#global *var*
+
+write clear asm code:
+	section: text, data, bss
+
+	#asm .*section* ...
+
+extern smth:
+	#extern func (...)
+
+define smth:
+	#define NULL 0
+
+undefine smth:
+	#undefine NULL
+
+if construction:
+	regex: [ \t]*if .+ (==|!=|>|<|>=|<=) .+: \.*[a-z|A-Z|_]\w*[ \t]*
+	
+	if a < b: ...
+	if 4 <= x: ...
+
+	example:
+		call ...
+		if rax == 1: true
+		; else is here
+		...
+		::true
+		...
+
+	!WARNING: can compare only integers!!!
+	if you want to compare float & integer or float & float
+	use this:
+	float qword a = 5.0
+	5 -> rax
+	if rax == float qword [a]: ...

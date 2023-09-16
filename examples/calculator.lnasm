@@ -1,0 +1,89 @@
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stringf.asm
+#global _start
+
+string unknown = "unknown operation: "
+const unknown_len = $ - unknown
+
+string wan = "write a number: "
+const wan_len = $ - wan
+string operation = "operation (+-*/)"
+const operation_len = $ - operation
+string wan2 = "write another number: "
+const wan_len2 = $ - wan2
+
+RES byte c[12]
+RES byte x[10]
+RES byte y[12]
+RES byte z[2]
+
+qword len1 = 0
+qword len2 = 0
+
+qword num1 = 0
+qword num2 = 0
+
+
+::_start
+    stdio.print(wan, wan_len) ; first number
+    stdio.input(x, 10)
+
+    stdio.print(operation, operation_len) ; operation
+    stdio.input(z, 2)
+    
+    stdio.print(wan2, wan_len2) ; second number
+    stdio.input(y, 10)
+
+    
+    stringf.len(x)
+    rax--
+    rax -> [len1]
+    stringf.len(y)
+    rax-- ; len('...\n') - 1
+    rax -> [len2]
+
+    stringf.StrToNum(x, len1)
+    rax -> [num1]
+    stringf.StrToNum(y, len2)
+    rax -> [num2]
+
+    z -> rsi
+    if byte [rsi] == "+": _add
+    if byte [rsi] == "-": _sub
+    if byte [rsi] == "/" : _div
+    if byte [rsi] == "*" : _mul
+    ; else
+    stdio.print(unknown, unknown_len)
+    stdio.print(z, 1)
+    jmp end
+
+    ::after
+    stringf.NumToStr(rax, c)
+    stringf.len(c)
+
+    stdio.print(c, rax)
+    
+
+::end
+    stdf.exit(0)
+
+
+::_add
+    add rax, qword [num1]
+    jmp after
+
+::_sub
+    sub rax, qword [num1]
+    jmp after
+
+::_mul
+    qword [num1] -> rbx
+    mul rbx
+    jmp after
+
+::_div
+    fdiv qword [num1], qword [num2], qword [num1]
+    fti qword [num1], qword [num1]
+    qword [num1] -> rax
+    jmp after

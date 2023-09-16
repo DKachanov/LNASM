@@ -1,0 +1,15 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#global _start
+
+
+byte d
+
+
+::_start
+	stdio.input(d, 1)
+	add byte [d], 2
+	stdio.print(d, 1)
+
+::end
+	stdf.exit(0)

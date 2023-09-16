@@ -1,0 +1,28 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/array64.asm
+
+#syntax PyLibs/matrix.py
+
+#global _start
+
+#define T_byte  0
+#define T_word  1
+#define T_dword 2
+#define T_qword 3
+
+::_start
+    list word LIST = [1, 2, 3, 4]
+    matrix16 matr2[4, 3]
+    ;   [[0, 0, 0, 0],
+    ;    [0, 0, 0, 0],
+    ;    [0, 0, 0, 0]]
+
+
+    array.copyto(LIST, matr2+4*2, T_word, 4)
+    ;   [[0, 0, 0, 0],
+    ;    [0, 0, 0, 0],
+    ;    [1, 2, 3, 4]]
+
+::end
+    stdf.exit(0)

@@ -1,0 +1,28 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/array64.asm
+
+#global _start
+
+#define NULL 0
+#define TRUE 1
+
+list byte x = [1, 2, 3, 4]
+
+::_start
+
+    array.in(x, qword [x.type], qword [x.len], 2)
+    if rbx == TRUE: .error
+    if rax == TRUE: .true
+    jmp .false
+
+    ::.true
+        stdio.print(undefined "true\n", 5)
+        jmp end
+    ::.false
+        stdio.print(undefined "false\n", 6)
+        jmp end
+    ::.error
+        stdio.print(undefined "error\n", 6)
+::end
+    stdf.exit(0)

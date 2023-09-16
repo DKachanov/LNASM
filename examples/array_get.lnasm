@@ -1,0 +1,19 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/array64.asm
+#append NASMLibs/stringf64.asm
+
+#global _start
+
+list dword a = [1, 2, 3, 4]
+RES byte num[21]
+
+::_start
+    array.get(a, qword [a.type], 1)
+    stringf.NumToStr(rax, num)
+    stringf.len(num)
+    stdio.print(num, rax)
+
+
+::end
+    stdf.exit(0)
