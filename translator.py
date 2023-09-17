@@ -27,7 +27,7 @@ class Translator:
         elif os.path.isfile(os.path.join(sys.path[0], file)):
             data = open(os.path.join(sys.path[0], file)).read()
         else:
-            print(f"[ERROR]: No such file as \"{string.split('#syntax ')[1]}\"")
+            print(f"[ERROR]: No such file as \"{file}\"")
             exit(1)
         #appending file data to main file with open(file).read()
         self._append += "; Appended file from " + file + ":\n" + data + "\n\n"
