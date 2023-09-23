@@ -1,5 +1,5 @@
 import argparse
-from syntax import syntax, syntax_nothing, syntax_com, syntax_not_defined_string, numbyte
+from syntax import syntax, syntax_nothing, syntax_com, syntax_not_defined_string, rep_spec_chars
 from translator import Translator
 import os, time
 
@@ -44,12 +44,9 @@ for line in lines:
             replaced = False
 
             rep = f"__undefined_string.n{undefined_c}"
-            for x in numbyte.finditer(line):
-                g = x.group()
-                g = g.replace(g, f"\", {g[1:]}, \"")
 
-            g = g.replace("\\n", "\", 0xa, \"").replace("\\t", "\", 0x9, \"")
 
+            g = rep_spec_chars(g)
 
             for l in translator.data.split("\n"):
                 if "__undefined_string" == l[:18]:
@@ -81,7 +78,16 @@ for line in lines:
         print(f"Syntax error in line {c}: {line}")
         exit(0)
 
-    
+#add defines
+translator.write_to_coms(f"""
+%define __version__ "0.1.2", 0
+%define __file__    "{name}", 0
+%define true 1
+%define false 1
+%define NULL 0
+""")
+
+
 open(args.outfile, "w").write(translator.translate())
 
 

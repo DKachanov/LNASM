@@ -34,6 +34,11 @@ type_num = {
     "dq" : 3
 }
 
+spec_char_to_num = {
+    "t" : 9,
+    "n" : 10
+}
+
 #skips lines with no data
 syntax_nothing = compile(r"[ \t]+")
 
@@ -42,7 +47,8 @@ syntax_com = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #not defined strings
 syntax_not_defined_string = compile(r'''("[^"]){0}undefined[ \t]+"[^"]*"''')
-numbyte = compile(r'\\x[0-9abcde]{2}')
+numbyte = compile(r'\\+x[0-9abcdef]{2}')
+spec_char = compile(r'\\+[n|t]')
 
 #data
 syntax_int_data         = compile(r"[ \t]*(byte|word|dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+.+")
@@ -156,10 +162,8 @@ def _syntax_string(string, translator, c):
     var, value = string.split("=", 1)
     value = "\"" + value.split("\"", 2)[1] + "\", 0"
     var = var.replace("string", "")
-    value = value.replace("\\n", "\", 0xa, \"").replace("\\t", "\", 0x9, \"")
-    for x in numbyte.finditer(value):
-        g = x.group()
-        value = value.replace(g, f"\", {g[1:]}, \"")
+    
+    value = rep_spec_chars(value)
 
     translator.write_to_data(f"{var} db {value}")
 
@@ -586,3 +590,20 @@ syntax = {
     syntax_fmul : _syntax_fmul,
     syntax_fdiv : _syntax_fdiv,
 }
+
+def rep_spec_chars(value):
+    for x in spec_char.finditer(value):
+        g = x.group()
+        if (len(g.split("\\"))-1) % 2 != 0:
+            a = g[-2:]
+            print(a)
+            value = value.replace(a, f"\", {hex(spec_char_to_num[a[1:]])}, \"")
+    
+    for x in numbyte.finditer(value):
+        g = x.group()
+        if (len(g.split("\\"))-1) % 2 != 0:
+            a = g[-4:]
+            value = value.replace(a, f"\", 0x{a[2:]}, \"")
+    value = value.replace("\\\\", "\\")
+
+    return value

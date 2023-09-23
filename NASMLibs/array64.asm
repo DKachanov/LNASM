@@ -1,3 +1,5 @@
+section .text
+
 ; examples:
 ;     array.reverse -> reverse.lnasm
 ;     array.get     -> array_get.lnasm

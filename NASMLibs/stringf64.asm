@@ -274,3 +274,29 @@ stringf.copyto:
       cld
       rep movsb
       ret
+
+stringf.replace:
+      ; stringf.replace(QWORD PTR (string) str, QWORD (byte) char_to_replace, QWORD (byte) replace_with_char, QWORD (int) len)
+      mov rsi, [rsp+8]
+      mov rdx, [rsp+16]
+      mov rbx, [rsp+24]
+      mov rcx, [rsp+32]
+
+      .loop:
+            dec rcx
+
+            mov al, [rsi+rcx]
+
+            cmp al, dl
+            je .replace
+            
+            cmp rcx, 0
+            je .end
+            jmp .loop
+
+      .replace:
+            mov [rsi+rcx], bl
+            jmp .loop
+
+      .end:
+            ret

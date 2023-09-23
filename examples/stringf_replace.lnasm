@@ -1,0 +1,15 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#global _start
+
+::_start
+    string a = "He11o, wor1d!\n"
+    const a.len = $ - a
+
+    stdio.print(a, a.len)
+    stringf.replace(a, qword "1", qword "l", a.len)
+    stdio.print(a, a.len)
+
+::end
+    stdf.exit(0)

@@ -1,0 +1,15 @@
+#append NASMLibs/stdio64.asm
+#append NASMLibs/stdf64.asm
+#append NASMLibs/stringf64.asm
+#global _start
+
+byte file = __file__
+byte version = __version__
+::_start
+    stringf.len(file)
+    stdio.print(file, rax)
+    stdio.print(undefined "\n", 1)
+    stdio.print(version, 6)
+
+::end
+    stdf.exit(0)
