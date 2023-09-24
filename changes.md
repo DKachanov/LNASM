@@ -27,6 +27,6 @@ stringf.replace(<br />
 	QWORD PTR (string) str,<br />
 	QWORD (byte) char_to_replace,<br />
 	QWORD (byte) replace_with_char,<br />
-	QWORD (int) len)<br />
+	QWORD (int) len)<br /><br />
 	replace a char (char_to_replace) with another char (replace_with_char) in string (str)<br /><br />
 _check examples/stringf_replace.lnasm_
