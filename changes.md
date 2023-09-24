@@ -14,10 +14,10 @@ NULL (0)<br /><br />
 _check examples/default_defines.lnasm_
 ## Fixed spec constructions in _string_ and _undefined_ macros
 "\\\\x23 abc"   -> "\\x23 abc"<br />
-"\\\\\\x31 abc" -> "\\\\1 abc"<br /><br />
+"\\\\\\x31 abc" -> "\\1 abc"<br /><br />
 
 "\\\\n abc" -> "\\n abc"<br />
-"\\\\\\n abc" -> "\\\\<br />
+"\\\\\\n abc" -> "\\<br />
  abc"
 ## Added "section .text" to **NASMLibs/array64.asm**
 To avoid errors
