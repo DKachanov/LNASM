@@ -80,7 +80,7 @@ for line in lines:
 
 #add defines
 translator.write_to_coms(f"""
-%define __version__ "0.1.2", 0
+%define __version__ "0.1.3", 0
 %define __file__    "{name}", 0
 %define true 1
 %define false 1
