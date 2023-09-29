@@ -35,15 +35,16 @@ type_num = {
 }
 
 spec_char_to_num = {
-    "t" : 9,
-    "n" : 10
+    "\\t" : 9,
+    "\\n" : 10
 }
 
 #skips lines with no data
 syntax_nothing = compile(r"[ \t]+")
+syntax_split = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #coms
-syntax_com = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+syntax_com = compile(r"/\*([^\"]+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #not defined strings
 syntax_not_defined_string = compile(r'''("[^"]){0}undefined[ \t]+"[^"]*"''')
@@ -592,18 +593,24 @@ syntax = {
 }
 
 def rep_spec_chars(value):
-    for x in spec_char.finditer(value):
+    chars = [a for a in spec_char.finditer(value)][::-1]
+
+    for x in chars:
         g = x.group()
         if (len(g.split("\\"))-1) % 2 != 0:
-            a = g[-2:]
-            print(a)
-            value = value.replace(a, f"\", {hex(spec_char_to_num[a[1:]])}, \"")
-    
+            a, b = x.span()
+            a += (len(g.split("\\"))-1) // 2
+            value = value[:a] + f"\", {spec_char_to_num[g]}, \"" + value[b:]
+
+
+    numbytes = [a for a in numbyte.finditer(value)][::-1]
+
     for x in numbyte.finditer(value):
         g = x.group()
         if (len(g.split("\\"))-1) % 2 != 0:
-            a = g[-4:]
-            value = value.replace(a, f"\", 0x{a[2:]}, \"")
+            a, b = x.span()
+            a += (len(g.split("\\"))-1) // 2
+            value = value[:a] + f"\", 0x{g[-4::][2:]}, \"" + value[b:]
     value = value.replace("\\\\", "\\")
 
     return value

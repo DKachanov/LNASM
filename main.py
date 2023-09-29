@@ -1,5 +1,12 @@
 import argparse
-from syntax import syntax, syntax_nothing, syntax_com, syntax_not_defined_string, rep_spec_chars
+from syntax import (
+    syntax,
+    syntax_nothing,
+    syntax_com,
+    syntax_not_defined_string,
+    rep_spec_chars,
+    syntax_split,
+    )
 from translator import Translator
 import os, time
 
@@ -12,7 +19,8 @@ args = parser.parse_args()
 
 name = args.name[::-1].split(".", 1)[1][::-1]
 
-lines = open(args.name, "r").readlines()
+lines = open(args.name, "r").read().replace("\n", "")
+lines = syntax_split.split(lines)
 
 Start_time = time.time()
 translator = Translator()
@@ -24,16 +32,19 @@ undefined_c = 0
 
 for line in lines:
     c += 1 #line counter
-    
-    line = line.replace("\n", "").replace("\t", "")
-
-    if syntax_com.search(line):
-        #removing coms
-        line = syntax_com.split(line)[0]
 
     if syntax_nothing.fullmatch(line) or line == "":
         #if line is fullmatches(r"[ \t]*") -> skipping line
         continue
+
+    if syntax_com.search(line):
+        #removing coms
+        comms = [x for x in syntax_com.finditer(line)][::-1]
+
+        for x in comms:
+            a, b = x.span()
+            line = line[:a] + line[b:]
+
 
     print(f"[{c}]: {' '*(str_num_lines_len - len(str(c)))}{line}")
 

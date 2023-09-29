@@ -1,19 +1,19 @@
-#append NASMLibs/stdf64.asm
-#append NASMLibs/stdio64.asm
-#append NASMLibs/stringf64.asm
-#global _start
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stringf64.asm;
+#global _start;
 
-qword x = 5
-float qword y = 10.1
-RES byte String[21]
+qword x = 5;
+float qword y = 10.1;
+RES byte String[21];
 
-::_start
-    fmul int qword [x], qword [y], qword [x]
-    fti qword [x], qword [x]
-    stringf.NumToStr(qword [x], String)
-    stringf.len(String)
+::_start;
+    fmul int qword [x], qword [y], qword [x];
+    fti qword [x], qword [x];
+    stringf.NumToStr(qword [x], String);
+    stringf.len(String);
 
-    stdio.print(String, rax)    
+    stdio.print(String, rax);
 
-::end
-    stdf.exit(0)
+::end;
+    stdf.exit(0);

@@ -6,7 +6,7 @@ datatypes:
 	string (char)
 	float (float)
 	list (all int types)
-	undefined "..." -> creates an undefined string
+	notdefined "..." -> creates an undefined string
 
 examples:
 	byte a = "\n"
@@ -67,7 +67,7 @@ instructions:
 
 
 comments:
-	; ...
+	/*...*/
 
 adding *.asm files:
 	#append *path*

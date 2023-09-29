@@ -1,29 +1,29 @@
-#append NASMLibs/stdf64.asm
-#append NASMLibs/stdio64.asm
-#append NASMLibs/time64.asm
-#append NASMLibs/stringf64.asm
-#global _start
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/time64.asm;
+#append NASMLibs/stringf64.asm;
+#global _start;
 
-RES byte a[21]
-RES byte b[21]
-RES qword T[4]
-;T:
-; [qword [T] seconds, qword [T+8] nanoseconds]
-; [qword [T+16] seconds, qword [T+24], nanoseconds]
+RES byte a[21];
+RES byte b[21];
+RES qword T[4];
+/*T:
+   [qword [T] seconds, qword [T+8] nanoseconds]
+   [qword [T+16] seconds, qword [T+24], nanoseconds] */
 
-::_start
+::_start;
 
-    time.time(T)
-    time.sleep(qword 3, qword 0)
-    time.time(T+16)
+    time.time(T);
+    time.sleep(qword 3, qword 0);
+    time.time(T+16);
 
-    [T+16] -> rax
-    sub rax, qword [T]
-    stringf.NumToStr(rax, a)
+    [T+16] -> rax;
+    sub rax, qword [T];
+    stringf.NumToStr(rax, a);
 
-    stringf.len(a)
-    stdio.print(a, rax)
+    stringf.len(a);
+    stdio.print(a, rax);
     
 
-::end
-    stdf.exit(0)
+::end;
+    stdf.exit(0);

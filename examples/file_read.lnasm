@@ -1,25 +1,25 @@
-#append NASMLibs/stdf64.asm
-#append NASMLibs/stdio64.asm
-#append NASMLibs/stringf64.asm
-#append NASMLibs/file64.asm
-#global _start
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stringf64.asm;
+#append NASMLibs/file64.asm;
+#global _start;
 
-const mode = 666o
+const mode = 666o;
 
-::_start
+::_start;
     
-    RES byte buffer[255]
-    qword fd
+    RES byte buffer[255];
+    qword fd;
 
-    file.open(undefined "test.txt", mode)
-    rax -> [fd]
-    file.read(qword [fd], buffer, 255)
-    stringf.len(buffer)
-    stdio.print(buffer, rax)
-    file.close(qword [fd])
-
-
+    file.open(undefined "test.txt", mode);
+    rax -> [fd];
+    file.read(qword [fd], buffer, 255);
+    stringf.len(buffer);
+    stdio.print(buffer, rax);
+    file.close(qword [fd]);
 
 
-::end
-    stdf.exit(0)
+
+
+::end;
+    stdf.exit(0);

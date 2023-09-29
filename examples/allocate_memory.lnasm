@@ -1,20 +1,20 @@
-#append NASMLibs/stdio64.asm
-#append NASMLibs/stdf64.asm
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stdf64.asm;
 
-#global _start
+#global _start;
 
-::_start
-    stdf.allocate_mem(4)
+::_start;
+    stdf.allocate_mem(4);
 
-    if rbx != 0: error
-    dword 825373492 -> [rax] ; string 1234
-    stdio.print(rax, 4)
-    stdio.print(undefined "\nMemory allocated succesfuly", 28)
+    if rbx != 0: error;
+    dword 825373492 -> [rax]; /* string 1234 */
+    stdio.print(rax, 4);
+    stdio.print(undefined "\nMemory allocated succesfuly", 28);
 
-::end
-    stdf.exit(0)
+::end;
+    stdf.exit(0);
 
 
-::error
-    stdio.print(undefined "failed to allocate memory", 25)
-    jmp end
+::error;
+    stdio.print(undefined "failed to allocate memory", 25);
+    jmp end;

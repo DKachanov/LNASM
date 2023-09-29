@@ -1,20 +1,20 @@
-#append NASMLibs/stdf64.asm
-#append NASMLibs/stdio64.asm
-#append NASMLibs/socket64.asm
-#syntax PyLibs/socket.py
-#global _start
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/socket64.asm;
+#syntax PyLibs/socket.py;
+#global _start;
 
-qword fd
+qword fd;
 
-socketAddr SA[socket.AF_INET, 127.0.0.1, 3000, 0]
-const SA.len = 16
+socketAddr SA[socket.AF_INET, 127.0.0.1, 3000, 0];
+const SA.len = 16;
 
-::_start
-    socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    rax -> [fd]
-    socket.connect(qword [fd], SA, SA.len)
-    socket.send(qword [fd], undefined "hello", 5)
-    socket.close(qword [fd], socket.SHUT_RDWR)
+::_start;
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
+    rax -> [fd];
+    socket.connect(qword [fd], SA, SA.len);
+    socket.send(qword [fd], undefined "hello", 5);
+    socket.close(qword [fd], socket.SHUT_RDWR);
 
-::end
-    stdf.exit(0)
+::end;
+    stdf.exit(0);

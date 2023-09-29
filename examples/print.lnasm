@@ -1,8 +1,8 @@
-#append NASMLibs/stdio64.asm
-#append NASMLibs/stdf64.asm
-#global _start
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stdf64.asm;
+#global _start;
 
-::_start
-    stdio.print(undefined "Hello, world!\n", 14)
+::_start;
+    stdio.print(undefined "Hello, world!\n", 14);
 
-    stdf.exit(0)
+    stdf.exit(0);
