@@ -44,7 +44,7 @@ syntax_nothing = compile(r"[ \t]+")
 syntax_split = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #coms
-syntax_com = compile(r"/\*([^\"]+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+syntax_com = compile(r"/\*(.+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #not defined strings
 syntax_not_defined_string = compile(r'''("[^"]){0}undefined[ \t]+"[^"]*"''')
