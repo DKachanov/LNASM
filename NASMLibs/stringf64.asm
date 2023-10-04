@@ -1,7 +1,9 @@
 ; examples:
-;     stringf.len       -> NumToStr.lnasm
-;     stringf.NumToStr  -> NumToStr.lnasm
-;     stringf.T_convert -> time_convert.lnasm
+;     stringf.len           -> NumToStr.lnasm
+;     stringf.NumToStr      -> NumToStr.lnasm
+;     stringf.T_convert     -> time_convert.lnasm
+;     stringf.FloatToString -> stringf_float.lnasm
+;     stringf.StringToFloat -> stringf_float.lnasm
 
 section .text
 
@@ -27,7 +29,7 @@ stringf.lpend:
       ret
 
 stringf.StrToNum:
-      ;stringf.StrToNum(QWORD PTR (string) str, QWORD (int) length)
+      ;stringf.StrToNum(QWORD PTR (string) str, QWORD (int) length) -> QWORD (int) num
 
       mov rdx, [rsp+8] ; our string
       mov rsi, [rsp+16]
@@ -300,3 +302,146 @@ stringf.replace:
 
       .end:
             ret
+
+section .data
+      stringf._1012 dq 1000000000000
+      stringf._res  dq 0
+      stringf._res2 dq 0
+      stringf._res3 dq 0
+
+section .text
+
+stringf.FloatToString:
+      ; stringf.FloatToString(QWORD (float) num, QWORD PTR (string) str) -> QWORD (int) length
+
+      ;(x*?).(x*12)
+
+      ;18446744073709551615
+
+      mov rdi, [rsp+16]
+
+      fld qword [rsp+8]
+      fild qword [stringf._1012]
+      fmul
+      fistp qword [stringf._res]
+      mov rax, qword [stringf._res]
+      mov rbx, qword [stringf._1012]
+      mov rdx, 0
+      div rbx
+      ;rax::rdx
+      mov qword [stringf._res], rdx
+
+      push rbp
+      mov rbp, rsp
+
+      push rdi
+      push rax
+      call stringf.NumToStr
+
+      mov byte [rdi], "."
+      inc rdi
+
+      push rdi
+      push qword [stringf._res]
+      call stringf.NumToStr
+
+      sub rdi, [rbp+24]
+      mov rax, rdi
+
+      mov rsp, rbp
+      pop rbp
+      ret
+
+
+stringf.StringToFloat:
+      ; stringf.StringToFloat(QWORD PTR (string) addr, QWORD (int) length) -> QWORD (float) num
+
+      mov rdi, [rsp+8]
+      mov rcx, [rsp+16]
+
+      push rbp
+      mov rbp, rsp
+
+      push "."
+      push rcx
+      push rdi
+      call stringf.split
+
+      ;    "***.***"
+      ; rax =  ^
+      
+      mov qword [stringf._res], rax
+
+      push rax
+      push qword [rbp+16]
+      call stringf.StrToNum
+
+      mov qword [stringf._res2], rax
+
+      mov rax, [stringf._res]
+      inc rax
+
+      mov rcx, [rbp+24]
+      mov rdi, [rbp+16]
+      sub rcx, rax
+      add rdi, rax
+      push rcx
+      push rdi
+      call stringf.StrToNum
+      
+
+
+      mov qword [stringf._res3], rax
+      fild qword [stringf._res3]
+
+      mov rax, [stringf._res]
+      inc rax
+      mov rcx, [rbp+24]
+      sub rcx, rax
+
+      push 10
+      push rcx
+      call stringf.math.ipower
+      mov qword [stringf._res3], rax
+      fild qword [stringf._res3]
+      fdiv
+
+      fild qword [stringf._res2]
+      fadd
+      fstp qword [stringf._res]
+
+      mov rsp, rbp
+      pop rbp
+
+      mov rax, qword [stringf._res]
+
+      ret
+
+
+      stringf.math.ipower:
+        mov rax, [rsp+8]
+        mov rcx, [rsp+16]
+
+        cmp rcx, 1
+        je stringf.math.ipower.end
+
+        cmp rcx, 0
+        je stringf.math.ipower.p0
+
+        mov rbx, rax
+
+        stringf.math.ipower.loop:
+                dec rcx
+                cmp rcx, 0
+                je stringf.math.ipower.end
+                mul rbx
+                jmp stringf.math.ipower.loop
+
+
+        stringf.math.ipower.p0:
+                mov rax, 1
+                ret
+
+        stringf.math.ipower.end:
+                ret
+

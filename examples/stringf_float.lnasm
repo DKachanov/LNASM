@@ -1,0 +1,18 @@
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/stringf64.asm;
+
+#global _start;
+
+::_start;
+
+    RES byte result[30];
+
+    stdio.print(undefined "insert value\n", 13);
+    stdio.input(result, 10);
+    stringf.StringToFloat(result, rax); /* rax = float */
+    stringf.FloatToString(rax, result+10); /* rax = length */
+    stdio.print(result+10, rax);
+
+::end;
+    stdf.exit(0);
