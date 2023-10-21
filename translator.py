@@ -9,6 +9,8 @@ class Translator:
         self.coms = ""
         self._append = ""
         self.path = ""
+        self.f_requires = []
+        self.f_heads = []
 
     def write_to_data(self, string):
         #writes string to data section

@@ -45,6 +45,7 @@ syntax_split = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #coms
 syntax_com = compile(r"/\*(.+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+syntax_comma = compile(r",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #not defined strings
 syntax_not_defined_string = compile(r'''("[^"]){0}undefined[ \t]+"[^"]*"''')
@@ -71,7 +72,7 @@ syntax_int     = compile(r"[ \t]*int .+")
 syntax_mov     = compile(r".* -> .*")
 syntax_inc     = compile(r"[ \t]*.+\+\+[ \t]*")
 syntax_dec     = compile(r"[ \t]*.+\-\-[ \t]*")
-syntax_syscall = compile(r"[ \t]*syscall[\t ]*")
+syntax_syscall = compile(r"[ \t]*syscall( .+){0,1}[\t ]*")
 
 #macros
 syntax_global         = compile(r"[ \t]*#global [a-z|A-Z|_][\.\w]*.*")
@@ -84,7 +85,8 @@ syntax_point          = compile(r"[ \t]*::\.*[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_extern         = compile(r"[ \t]*#extern[ \t]+[a-z|A-Z|_][\.\w]*.*")
 syntax_def            = compile(r"[ \t]*#define[ \t]+[a-z|A-Z|_][\.\w]*[ \t]+.*")
 syntax_undef          = compile(r"[ \t]*#undefine[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
-
+syntax_from           = compile(r"[ \t]*#from[ \t]+\"[^\"]+\"[ \t]+append[ \t]+\"[^\"]+\"[ \t]*")
+syntax_head           = compile(r'[ \t]*#head[ \t]+.+[ \t]*')
 
 #imath
 syntax_add = compile(r"[ \t]*add .*, .*")
@@ -101,6 +103,8 @@ syntax_float_to_int = compile(r"[ \t]*fti .*, .*")
 syntax_int_conv     = compile(r"[ \t]*int .*")
 syntax_float_conv   = compile(r"[ \t]*float .*")
 
+
+reg_list = ['rax', 'rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9']
 
 #data func
 def _syntax_int_data(string, translator, c):
@@ -262,6 +266,23 @@ def _syntax_incdec(string, translator, c):
         translator.write_to_text("dec " + string.replace("--", ""))
 
 
+def _syntax_syscall(string, translator, c):
+    """
+        Can be used as instruction "syscall"
+        or "syscall arg(1), ..., arg(n)"
+    """
+
+    if compile(r"[ \t]*syscall[ \t]*").fullmatch(string):
+        translator.write_to_text(string)
+        return
+
+    unpack = syntax_comma.split(string.split("syscall", 1)[1])
+    if len(unpack) > len(reg_list):
+        print(f"[ERROR]: Too many values to unpack ({len(unpack)})")
+        sys.exit(1)
+    for r, u in zip(reg_list, unpack):
+        translator.write_to_text(f"mov {r}, {u}")
+    translator.write_to_text("syscall")
 
 #macros func
 def _syntax_global(string, translator, c):
@@ -425,6 +446,71 @@ def _syntax_defundef(string, translator, c):
     translator.write_to_text(string.replace("#", "%", 1))
 
 
+def _syntax_from(string, translator, c):
+    """
+    #from "file" append "function"
+    appends from a "file" a function
+    """
+
+    f, file, a, func, n = string.split("\"")
+    if os.path.isfile(file):
+        data = open(file).read()
+    elif os.path.isfile(os.path.join(sys.path[0], file)):
+        data = open(os.path.join(sys.path[0], file)).read()
+    else:
+        print(f"[ERROR]: No such file as \"{file}\"")
+        exit(1)
+
+    translator._append += f"\n; [{c}] appended from {file} function {func}\n"
+    if ";;required" in data:
+        if not (
+            file in translator.f_requires
+            or
+            os.path.join(sys.path[0], file) in translator.f_requires):
+
+            translator.f_requires.append(file if file in translator.f_requires else os.path.join(sys.path[0], file))
+            translator._append += f"\n{data.split(';;required')[0]}\n"
+        data = data.split(";;required")[1]
+
+    splited = data.split(";;endfunc")
+    found = False
+
+
+    for x in splited:
+        if (func + ":") in x:
+            translator._append += f"\nsection .text\n{x}\n"
+            found = True
+            break
+
+    if not found:
+        print(f"[ERROR]: No such function as \"{func}\"")
+        exit(1)
+
+def _syntax_head(string, translator, c):
+
+    h, file = string.split("#head")
+    file = file[::-1].split(maxsplit=1)[0][::-1]
+    if os.path.isfile(file):
+        data = open(file).read()
+    elif os.path.isfile(os.path.join(sys.path[0], file)):
+        data = open(os.path.join(sys.path[0], file)).read()
+    else:
+        print(f"[ERROR]: No such file as \"{file}\"")
+        exit(1)
+
+    translator._append += f"\n; [{c}] appended head from {file}\n"
+    if ";;head" in data:
+        if not (
+            file in translator.f_heads
+            or
+            os.path.join(sys.path[0], file) in translator.f_heads):
+
+            translator.f_heads.append(file if file in translator.f_heads else os.path.join(sys.path[0], file))
+            translator.coms += f"\n{data.split(';;head')[0]}\n"
+
+    else:
+        print(f"[ERROR]: No head in file \"{file}\"")
+
 #fmath func
 
 def _syntax_fadd(string, translator, c):
@@ -561,7 +647,7 @@ syntax = {
     syntax_pop : _clean_asm_text,
     syntax_jmp : _clean_asm_text,
     syntax_ret : _clean_asm_text,
-    syntax_syscall : _clean_asm_text,
+    syntax_syscall : _syntax_syscall,
 
     #macros
     syntax_global : _syntax_global,
@@ -574,6 +660,8 @@ syntax = {
     syntax_point : _syntax_point,
     syntax_def : _syntax_defundef,
     syntax_undef : _syntax_defundef,
+    syntax_from : _syntax_from,
+    syntax_head : _syntax_head,
 
     #math
     syntax_add : _clean_asm_text,

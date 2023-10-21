@@ -1,7 +1,7 @@
 from re import compile
 
 syntax_struct = compile(r"[ \t]*struct[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+\{(.*\,[ ]*)*.*\}[ \t]*")
-by_backslash = compile(r"\\(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+syntax_comma = compile(r",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 by_space = compile(r"[ \t](?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 nothing = compile(r"[ \t]+")
 
@@ -9,7 +9,7 @@ def _syntax_struct(string, translator, c):
 	"""
 	creates structure
 	"""
-	global by_backslash, by_space, nothing
+	global syntax_comma, by_space, nothing
 	translator.write_to_data(f"; [{c}]: {string}")
 
 	s = string.split("struct", 1)[1]
@@ -19,7 +19,7 @@ def _syntax_struct(string, translator, c):
 	
 	struct = s.split("{", 1)[1][::-1].split("}", 1)[1][::-1]
 	# "{abc}" -> "abc}" -> "}cba" -> "cba" -> "abc"
-	key_val = by_backslash.split(struct)
+	key_val = syntax_comma.split(struct)
 
 	translator.write_to_data(f"{n} equ $")
 
