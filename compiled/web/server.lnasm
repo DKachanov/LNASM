@@ -1,0 +1,172 @@
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/file64.asm;
+/*#append NASMLibs/stringf64.asm*/
+#from "NASMLibs/stringf64.asm" append "stringf.split";
+#from "NASMLibs/stringf64.asm" append "stringf.compare";
+/*#append NASMLibs/socket64.asm*/
+#from "NASMLibs/socket64.asm" append "socket.socket";
+#from "NASMLibs/socket64.asm" append "socket.bind";
+#from "NASMLibs/socket64.asm" append "socket.listen";
+#from "NASMLibs/socket64.asm" append "socket.accept";
+#from "NASMLibs/socket64.asm" append "socket.recv";
+#from "NASMLibs/socket64.asm" append "socket.close";
+#from "NASMLibs/socket64.asm" append "socket.send";
+#append consts.asm;
+
+#syntax PyLibs/socket.py;
+#syntax PyLibs/stdf.py;
+
+#global _start;
+
+
+::_start;
+
+    qword sock;
+    qword conn;
+    qword len;
+    qword fd;
+    qword size;
+    qword filebuff;
+    RES byte buffer[255];
+    statbuf stat;
+
+    socketAddr Server[socket.AF_INET, 127.0.0.1, 8080, 0];
+    const Server.len = $ - Server;
+
+    /* vars */
+
+    stdf.signal(2, end);
+    /* handles Ctrl+C -> end */
+
+
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
+    rax -> [sock];
+
+    socket.bind(qword [sock], Server, Server.len);
+    socket.listen(qword [sock], 1);
+
+    stdio.print(undefined "Listening on port 8080...\n", 26);
+
+    /* creating socket */
+
+    ::.loop; /* server loop */
+    socket.accept(qword [sock], 0, 0);
+    rax -> [conn];
+
+    socket.recv(qword [conn], buffer, 255);
+    rax -> [len];
+
+    handler(); /* handler */
+
+    socket.close(qword [conn], socket.SHUT_RDWR); /* closing connection */
+    jmp .loop;
+
+::end;
+    stdio.print(undefined "\nShutting down the server...\n", 29);
+    socket.close(qword [sock], socket.SHUT_RDWR);
+    stdf.exit(0);
+
+
+::handler;
+    qword handler.pointer;
+
+    push rbp;
+    rsp -> rbp;
+
+    stringf.split(buffer, qword [len], qword " ");
+    
+    /*
+        "GET /... "
+            ^
+    rax =   |
+
+    */
+    
+    rax++;
+    rax -> [handler.pointer];
+    qword [len] -> rbx;
+    sub rbx, rax;
+    add rax, buffer;
+    stringf.split(rax, rbx, qword " ");
+
+    /* 
+        "GET /... "
+                 ^
+    rax =        |
+
+    route = buffer + [handler.pointer] -> buffer + rax + [handler.pointer]
+    length = rax
+
+    */
+
+    add qword [handler.pointer], buffer;
+    stdio.print(qword [handler.pointer], rax);
+
+    /* routes: */
+    stringf.compare(qword [handler.pointer], undefined "/ ", 2);
+        if rax == true:
+            handler.index.html;
+    stringf.compare(qword [handler.pointer], undefined "/test ", 6);
+        if rax == true: 
+            handler.test.html;
+
+    /* else 404*/
+    jmp handler.e404;
+
+    ::handler.e200;
+        stdio.print(undefined " - 200\n", 8);
+        jmp handler.end;
+
+
+    ::handler.e404;
+        open(undefined "p404.html");
+        socket.send(qword [conn], consts.http404, consts.http404Len);
+        socket.send(qword [conn], qword [filebuff], qword [stat.size]);
+        stdio.print(undefined " - 404\n", 8);
+
+    ::handler.end;
+        rbp -> rsp;
+        pop rbp;
+        ret;
+
+/* / */
+::handler.index.html;
+    open(undefined "index.html");
+    socket.send(qword [conn], consts.http200, consts.http200Len);
+    socket.send(qword [conn], qword [filebuff], qword [stat.size]);
+
+    jmp handler.e200;
+
+/* /test */
+
+::handler.test.html;
+    open(undefined "test.html");
+
+    socket.send(qword [conn], consts.http200, consts.http200Len);
+    socket.send(qword [conn], qword [filebuff], qword [stat.size]);
+    jmp handler.e200;
+/* subs */
+
+::open;
+    /* open(filename) */
+    push rbp;
+    rsp -> rbp;
+    file.stat(qword [rbp+16], stat);
+    stdf.allocate_mem(qword [stat.size]);
+    if rbx == true: error;
+    rax -> [filebuff];
+
+    file.open(qword [rbp+16], 0);
+    rax -> [fd];
+
+    file.read(qword [fd], qword [filebuff], qword [stat.size]);
+    file.close(qword [fd]);
+
+    rbp -> rsp;
+    pop rbp;
+    ret;
+
+
+::error;
+    stdio.print(undefined "Failed to allocate memory", 25);

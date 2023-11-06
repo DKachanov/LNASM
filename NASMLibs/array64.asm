@@ -5,6 +5,7 @@ section .text
 ;     array.get     -> array_get.lnasm
 ;     array.in      -> array_in.lnasm
 ;     array.copyto  -> matrix.lnasm
+;     array.sort    -> sort.lnasm
 
 array.reverse:
 	; array.reverse(QWORD PTR (array) array, QWORD (int) length, QWORD (int) type) -> QWORD (int) error
@@ -285,4 +286,137 @@ array.copyto:
 
 	.error:
 		mov rbx, 1
+		ret
+
+;;endfunc
+
+array.bubble_sort:
+	; array.bubble_sort(QWORD PTR (int array) input, QWORD (int) len, QWORD (int) type)
+	; type error -> rbx (-1)
+
+	mov rsi, [rsp+8]
+	mov rdx, [rsp+16]
+	mov r9, rsi
+	mov rdi, rdx
+	mov rcx, 0
+
+	mov rax, [rsp+24]
+
+	push rbp
+	mov rbp, rsp
+	
+	cmp rax, 0
+	push .loopb
+	je .loopb
+
+	cmp rax, 1
+	push .loopw
+	je .loopw
+
+	cmp rax, 2
+	push .loopd
+	je .loopd
+
+	cmp rax, 3
+	push .loopq
+	je .loopq
+	jmp .terror
+
+	;byte
+
+	.loopb:
+		mov al, [rsi]
+		mov bl, [rsi+1]
+		cmp al, bl
+		jg .swapb
+		.continueb:
+		inc rsi
+		dec rdx
+		cmp rdx, 1
+		je .end
+		jmp .loopb
+
+	.swapb:
+		mov rcx, 1
+		mov [rsi], bl
+		mov [rsi+1], al
+		jmp .continueb
+
+	;word
+
+	.loopw:
+		mov ax, [rsi]
+		mov bx, [rsi+2]
+		cmp ax, bx
+		jg .swapw
+		.continuew:
+		add rsi, 2
+		dec rdx
+		cmp rdx, 1
+		je .end
+		jmp .loopw
+
+	.swapw:
+		mov rcx, 1
+		mov [rsi], bx
+		mov [rsi+2], ax
+		jmp .continuew
+
+	;dword
+
+	.loopd:
+		mov eax, [rsi]
+		mov ebx, [rsi+4]
+		cmp eax, ebx
+		jg .swapd
+		.continued:
+		add rsi, 4
+		dec rdx
+		cmp rdx, 1
+		je .end
+		jmp .loopd
+
+	.swapd:
+		mov rcx, 1
+		mov [rsi], ebx
+		mov [rsi+4], eax
+		jmp .continued
+
+	;qword
+
+	.loopq:
+		mov rax, [rsi]
+		mov rbx, [rsi+8]
+		cmp rax, rbx
+		jg .swapq
+		.continueq:
+		add rsi, 8
+		dec rdx
+		cmp rdx, 1
+		je .end
+		jmp .loopq
+
+
+	.swapq:
+		mov rcx, 1
+		mov [rsi], rbx
+		mov [rsi+8], rax
+		jmp .continueq
+
+	.end:
+		cmp rcx, 0
+		je .ret
+		mov rsi, r9
+		mov rdx, rdi
+		mov rcx, 0
+		jmp qword [rsp]
+	.ret:
+		mov rsp, rbp
+		pop rbp
+		ret
+
+	.terror:
+		mov rbx, -1
+		mov rsp, rbp
+		pop rbp
 		ret

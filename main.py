@@ -66,7 +66,7 @@ for line in lines:
             if not replaced:
                 line = line.replace(res, rep)
 
-                translator.write_to_data(f"; {c} undefined string\n__undefined_string.n{undefined_c}: db {g.replace('undefined', '')}, 0")
+                translator.write_to_data(f"; [{c}]: undefined string\n__undefined_string.n{undefined_c}: db {g.replace('undefined', '')}, 0")
 
 
             undefined_c += 1
@@ -92,7 +92,7 @@ translator.write_to_coms(f"""
 %define __version__ "0.1.3", 0
 %define __file__    "{name}", 0
 %define true 1
-%define false 1
+%define false 0
 %define NULL 0
 """)
 

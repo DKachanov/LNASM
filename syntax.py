@@ -41,7 +41,7 @@ spec_char_to_num = {
 
 #skips lines with no data
 syntax_nothing = compile(r"[ \t]+")
-syntax_split = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+syntax_split = compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^{]*\})")
 
 #coms
 syntax_com = compile(r"/\*(.+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")

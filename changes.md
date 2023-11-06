@@ -1,28 +1,14 @@
 # Changes
+## New PyLib unsafe_call.py
+If you have some unusual "names" for function address (\[rbp + 8\], \[rbx\], etc.), use _\#syntax PyLibs/unsafe\_call.py_.<br />
+It allows using unsafe names
+## New function stdf.signal
+Handles signals<br /><br />
 
-## New macros
-### \#from "file" append "func";
-This macros requires a split word ";;endfunc"<br />
-If your functions requires some definitions or variables, you can move them to the start of file and write ";;required" after to let
-### syscall
-Now, it can include args:<br />
-syscall 1, 1, undefined "test", 4;<br />
-translates to<br />
-mov rax, 1<br />
-mov rdi, 1<br />
-mov rsi, \_\_undefined_string.n0<br />
-mov rdx, 4<br />
-syscall
-### \#head
-#head ...;<br />
-Append head of file (before ";;head")
-## Fixed stringf.FloatToString
-## New struct syntax
-The split char is changed to ',' ('\\' before)<br /><br />
-To access _struct_ syntax, load _PyLibs/struct.py_
-## New NASMLib "syscalls.asm"
-Append a list of syscall names (defines)
-<br />
-For example, syscall.sys_exit, syscall.sys_write, etc.<br />
+example: compiled/web/server.lnasm
+## New function array.bubble_sort
+Sort an array with bubble sort algorithm<br /><br />
 
-Use _#head_ to apply it properly.
+example: sort.lnasm
+## Server example at compiled/web
+## Fixed false = 1 -> false = 0

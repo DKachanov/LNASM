@@ -1,0 +1,13 @@
+#append NASMLibs/stdf64.asm;
+#append NASMLibs/array64.asm;
+
+#global _start;
+
+list qword x = [5, 4, 2, 6, 3];
+
+::_start;
+    
+    array.bubble_sort(x, qword [x.len], qword [x.type]);
+
+::end;
+    stdf.exit(0);

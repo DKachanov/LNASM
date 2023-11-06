@@ -32,7 +32,7 @@ class Translator:
             print(f"[ERROR]: No such file as \"{file}\"")
             exit(1)
         #appending file data to main file with open(file).read()
-        self._append += "; Appended file from " + file + ":\n" + data + "\n\n"
+        self._append += "; Appended " + file + ":\n" + data + "\n\n"
     def translate(self):
         #packing all strings together in 1
         if self.bss == "section .bss\n\n":
