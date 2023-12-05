@@ -10,8 +10,8 @@
 };<br />
 ...<br />
 ## New function math.ctg
-## Functions stringf.StrToNum and string.NumToStr now checks for sign (signed int)
 math.ctg(QWORD (float) radians) -> QWORD (float) value
+## Functions stringf.StrToNum and string.NumToStr now checks for sign (signed int)
 
 ## While
 while(*condition*) {<br/>
@@ -19,12 +19,3 @@ while(*condition*) {<br/>
 }<br/>
 
 Check for example in examples/while.lnasm
-
-syntax.py
-main.py
-translator.py
-base syntax.txt
-NASMLibs/math64.asm
-NASMLibs/stringf64.asm
-examples/log.lnasm
-examples/while.lnasm
