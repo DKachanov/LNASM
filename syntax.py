@@ -522,7 +522,7 @@ def _syntax_head(string, translator, c):
 
 def _syntax_while(string, translator, c):
     """
-    for(rcx++, rcx <= 1) {
+    while(...) {
         ...;
     }
     """
