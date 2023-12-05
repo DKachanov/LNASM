@@ -11,6 +11,8 @@ class Translator:
         self.path = ""
         self.f_requires = []
         self.f_heads = []
+        self.c = 0
+        self.lines_len = 0
 
     def write_to_data(self, string):
         #writes string to data section

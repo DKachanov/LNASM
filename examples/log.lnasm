@@ -1,0 +1,19 @@
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stringf64.asm;
+#append NASMLibs/math64.asm;
+
+#global _start;
+
+::_start;
+
+    float qword x = 2.0;
+    float qword y = 8.0;
+
+    math.log(qword [x], qword [y]);
+
+    RES byte buffer[20];
+    stringf.FloatToString(rax, buffer);
+    stdio.print(buffer, rax);
+
+::end;
+    syscall 60, 0;

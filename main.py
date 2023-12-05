@@ -30,13 +30,11 @@ lines = syntax_split.split(lines)
 Start_time = time.time()
 translator = Translator()
 
-c = 0
-
-str_num_lines_len = len(str(len(lines)))
+translator.lines_len = len(str(len(lines)))
 undefined_c = 0
 
 for line in lines:
-    c += 1 #line counter
+    translator.c += 1 #line counter
 
 
     if syntax_nothing.fullmatch(line) or line == "":
@@ -44,7 +42,7 @@ for line in lines:
         continue
 
 
-    print(f"[{c}]: {' '*(str_num_lines_len - len(str(c)))}{line}")
+    print(f"[{translator.c}]: {' '*(translator.lines_len - len(str(translator.c)))}{line}")
 
     if syntax_not_defined_string.search(line):
         for i in syntax_not_defined_string.finditer(line):
@@ -66,7 +64,7 @@ for line in lines:
             if not replaced:
                 line = line.replace(res, rep)
 
-                translator.write_to_data(f"; [{c}]: undefined string\n__undefined_string.n{undefined_c}: db {g.replace('undefined', '')}, 0")
+                translator.write_to_data(f"; [{translator.c}]: undefined string\n__undefined_string.n{undefined_c}: db {g.replace('undefined', '')}, 0")
 
 
             undefined_c += 1
@@ -76,7 +74,7 @@ for line in lines:
     
     for s in syntax.keys():
         if s.fullmatch(line):
-            syntax[s](line, translator, c)
+            syntax[s](line, translator, translator.c)
             not_matched = False
             
             break
@@ -84,7 +82,7 @@ for line in lines:
     if not_matched:
         #if line does not fullmatch any syntax pattern
         #it shows error
-        print(f"Syntax error in line {c}: {line}")
+        print(f"Syntax error in line {translator.c}: {line}")
         exit(0)
 
 #add defines

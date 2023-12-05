@@ -66,6 +66,18 @@ instructions:
 	#float to int
 
 
+while:
+
+	while(*condition*) {
+		...;
+	};
+
+	for forever:
+
+	while(true) {
+		...;
+	};
+
 comments:
 	/*...*/
 
@@ -91,7 +103,9 @@ globalizing variables:
 write clear asm code:
 	section: text, data, bss
 
-	#asm .*section* ...
+	#asm .*section* {
+		*raw asm code*;
+	};
 
 extern smth:
 	#extern func (...)

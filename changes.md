@@ -1,14 +1,30 @@
 # Changes
-## New PyLib unsafe_call.py
-If you have some unusual "names" for function address (\[rbp + 8\], \[rbx\], etc.), use _\#syntax PyLibs/unsafe\_call.py_.<br />
-It allows using unsafe names
-## New function stdf.signal
-Handles signals<br /><br />
+## Fixed call with args
+## Changed #asm
+...<br />
+#asm .text {<br />
+	cmp ...;<br />
+	je ...;<br />
+	...;<br />
+	test ...;<br />
+};<br />
+...<br />
+## New function math.ctg
+## Functions stringf.StrToNum and string.NumToStr now checks for sign (signed int)
+math.ctg(QWORD (float) radians) -> QWORD (float) value
 
-example: compiled/web/server.lnasm
-## New function array.bubble_sort
-Sort an array with bubble sort algorithm<br /><br />
+## While
+while(*condition*) {<br/>
+	...<br/>
+}<br/>
 
-example: sort.lnasm
-## Server example at compiled/web
-## Fixed false = 1 -> false = 0
+Check for example in examples/while.lnasm
+
+syntax.py
+main.py
+translator.py
+base syntax.txt
+NASMLibs/math64.asm
+NASMLibs/stringf64.asm
+examples/log.lnasm
+examples/while.lnasm

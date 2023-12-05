@@ -36,6 +36,15 @@ stringf.StrToNum:
       mov rdx, [rsp+8] ; our string
       mov rsi, [rsp+16]
       xor rax, rax ; zero a "result so far"
+
+      cmp byte [rdx], "-"
+      jne .c
+
+      inc rdx
+      dec rsi
+      
+      .c:
+
       .top:
       movzx rcx, byte [rdx] ; get a character
 
@@ -55,7 +64,17 @@ stringf.StrToNum:
       jz .done
 
       jmp .top ; until done
+      
+
       .done:
+      mov rdx, [rsp+8]
+      
+      cmp byte [rdx], "-"
+      jne .ret
+      neg rax
+
+      .ret:
+      
       ret
 
 ;;endfunc
@@ -75,9 +94,18 @@ stringf.NumToStr:
 
       mov rax, qword [rsp+8] ; QWORD (int) number
       mov rbx, qword [rsp+16] ; QWORD PTR (str) String
+      mov rcx, 0x7fffffffffffffff
+      cmp rax, rcx
+      jl .c
+      neg rax
+      mov byte [rbx], "-"
+      inc rbx
+      
+      .c:
       mov [stringf.string], rbx
       mov byte [stringf.counter], 0
       mov rcx, 10
+
 
       .loop:
 

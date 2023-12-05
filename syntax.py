@@ -69,6 +69,7 @@ syntax_ret     = compile(r"[ \t]*ret[ \t]*")
 syntax_jmp     = compile(r"[ \t]*jmp .+")
 syntax_call    = compile(r"[ \t]*call[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_int     = compile(r"[ \t]*int .+")
+syntax_logic   = compile(r"[ \t]*(and|or|xor|test|not) .*, .*")
 syntax_mov     = compile(r".* -> .*")
 syntax_inc     = compile(r"[ \t]*.+\+\+[ \t]*")
 syntax_dec     = compile(r"[ \t]*.+\-\-[ \t]*")
@@ -80,19 +81,21 @@ syntax_append         = compile(r"[ \t]*#append .*")
 syntax_syntax         = compile(r"[ \t]*#syntax .*")
 syntax_if             = compile(r"[ \t]*if .+ (==|!=|>|<|>=|<=) .+:[ \t]+\.*[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_call_with_args = compile(r"[ \t]*[a-z|A-Z|_][\w|\.]*\(.*\)[ \t]*")
-syntax_asm            = compile(r"[ \t]*#asm[ \t]+\.(text|data|bss) .*")
+syntax_asm            = compile(r"[ \t]*#asm[ \t]+\.(text|data|bss) \{[^\}]+\}[ \t]*")
 syntax_point          = compile(r"[ \t]*::\.*[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_extern         = compile(r"[ \t]*#extern[ \t]+[a-z|A-Z|_][\.\w]*.*")
 syntax_def            = compile(r"[ \t]*#define[ \t]+[a-z|A-Z|_][\.\w]*[ \t]+.*")
 syntax_undef          = compile(r"[ \t]*#undefine[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_from           = compile(r"[ \t]*#from[ \t]+\"[^\"]+\"[ \t]+append[ \t]+\"[^\"]+\"[ \t]*")
 syntax_head           = compile(r'[ \t]*#head[ \t]+.+[ \t]*')
+syntax_while            = compile(r'[ \t]*while(.*) {.*}')
 
 #imath
-syntax_add = compile(r"[ \t]*add .*, .*")
-syntax_sub = compile(r"[ \t]*sub .*, .*")
-syntax_div = compile(r"[ \t]*div .*")
-syntax_mul = compile(r"[ \t]*mul .*")
+syntax_add   = compile(r"[ \t]*add .*, .*")
+syntax_sub   = compile(r"[ \t]*sub .*, .*")
+syntax_div   = compile(r"[ \t]*div .*")
+syntax_mul   = compile(r"[ \t]*mul .*")
+syntax_shift = compile(r"[ \t]*.* (<<|>>) .*")
 
 #fmath
 syntax_fadd         = compile(r"[ \t]*fadd .*, .*, .*")
@@ -284,6 +287,7 @@ def _syntax_syscall(string, translator, c):
         translator.write_to_text(f"mov {r}, {u}")
     translator.write_to_text("syscall")
 
+
 #macros func
 def _syntax_global(string, translator, c):
     """
@@ -366,7 +370,7 @@ def _syntax_call_with_args(string, translator, c):
     translator.write_to_text(f"; [{c}]: {string}")
     
     func = string.split("(")[0]
-    args = string.split("(")[1].split(")")[0].split(",")
+    args = string.split("(", 1)[1][::-1].split(")", 1)[1][::-1].split(",")
     args.reverse()
     if not args == ['']:
         for arg in args:
@@ -383,15 +387,18 @@ def _syntax_asm(string, translator, c):
     """
     translator.write_to_text(f"; [{c}]: {string}")
 
-    sec, code = string.split("#asm ", 1)[1].split(maxsplit=1)
+    sec, code = string.split("#asm", 1)[1].split(maxsplit=1)
     if sec == ".text":
-        translator.write_to_text(code)
+        call = translator.write_to_text
     elif sec == ".data":
-        translator.write_to_data(code)
+        call = translator.write_to_data
     elif sec == ".bss":
-        translator.write_to_bss(code)
+        call = translator.write_to_bss
     else:
         raise SyntaxError((string, "unknown section"))
+
+    for line in syntax_split.split(code.replace("{", "").replace("}", "")):
+        call(line)
 
 def _clean_asm_text(string, translator, c):
     """
@@ -510,6 +517,115 @@ def _syntax_head(string, translator, c):
 
     else:
         print(f"[ERROR]: No head in file \"{file}\"")
+
+
+
+def _syntax_while(string, translator, c):
+    """
+    for(rcx++, rcx <= 1) {
+        ...;
+    }
+    """
+    always_true = False
+    name = f".__forConstruction{c}"
+    print(f"While start (for while in line {c})")
+    condition = compile(r"\)[ \t]*\{").split(string)[0].split("while(")[1]
+    if not compile(r"[ \t]*true[ \t]*").fullmatch(condition):
+        search = compile(r"(==|!=|>|<|>=|<=)").search(condition)
+
+        if search == None:
+            print(f"[ERROR]: There is an error in coindition \"{condition}\"")
+            exit(1)
+
+        search = search.group()
+        fir, sec = condition.split(search)
+        jmp = conditions[search]
+    else:
+        always_true = True
+
+    translator.write_to_text(name + ":")
+
+    lines = compile(r"\)[ \t]*\{").split(string, maxsplit=1)[1][::-1].split("}", maxsplit=1)[1][::-1]
+    for line in syntax_split.split(lines):
+        translator.c += 1 #line counter
+
+
+        if syntax_nothing.fullmatch(line) or line == "":
+            #if line is fullmatches(r"[ \t]*") -> skipping line
+            continue
+
+
+        print(f"[{translator.c}]: {' '*(translator.lines_len - len(str(translator.c)))}{line}")
+
+        if syntax_not_defined_string.search(line):
+            for i in syntax_not_defined_string.finditer(line):
+                g = i.group()
+                res = g
+                replaced = False
+
+                rep = f"__undefined_string.n{undefined_c}"
+
+
+                g = rep_spec_chars(g)
+
+                for l in translator.data.split("\n"):
+                    if "__undefined_string" == l[:18]:
+                        if f" db {g.replace('undefined', '')}, 0" == l.split(":")[1]:
+                            line = line.replace(res, l.split(":")[0])
+                            replaced = True
+
+                if not replaced:
+                    line = line.replace(res, rep)
+
+                    translator.write_to_data(f"; [{translator.c}]: undefined string\n__undefined_string.n{undefined_c}: db {g.replace('undefined', '')}, 0")
+
+
+                undefined_c += 1
+
+
+        not_matched = True
+        
+        for s in syntax.keys():
+            if s.fullmatch(line):
+                syntax[s](line, translator, translator.c)
+                not_matched = False
+                
+                break
+        
+        if not_matched:
+            #if line does not fullmatch any syntax pattern
+            #it shows error
+            print(f"Syntax error in line {c}: {line}")
+            exit(0)
+
+    if always_true:
+        translator.write_to_text(f"jmp .__forConstruction{c}")    
+    else:
+        translator.write_to_text(f"cmp {fir}, {sec}")
+        translator.write_to_text(f"{jmp} .__forConstruction{c}")
+
+    print(f"While end (for while in line {c})")
+
+
+#math fun
+
+def _syntax_shift(string, translator, c):
+    """
+        shifts first 
+        a >> b
+        a << b
+        shr a, b
+        shl a, b
+    """
+    translator.write_to_text(f"; [{c}]: {string}")
+
+    if "<<" in string:
+        a, b = string.split("<<")
+        translator.write_to_text(f"shl {a}, {b}")
+    else:
+        a, b = string.split(">>")
+        translator.write_to_text(f"shr {a}, {b}")
+
 
 #fmath func
 
@@ -639,16 +755,6 @@ syntax = {
     syntax_list : _syntax_list,
     syntax_float : _syntax_float,
 
-    #instructions
-    syntax_mov : _syntax_mov,
-    syntax_int : _clean_asm_text,
-    syntax_call : _clean_asm_text,
-    syntax_push : _clean_asm_text,
-    syntax_pop : _clean_asm_text,
-    syntax_jmp : _clean_asm_text,
-    syntax_ret : _clean_asm_text,
-    syntax_syscall : _syntax_syscall,
-
     #macros
     syntax_global : _syntax_global,
     syntax_extern : _syntax_extern,
@@ -662,6 +768,19 @@ syntax = {
     syntax_undef : _syntax_defundef,
     syntax_from : _syntax_from,
     syntax_head : _syntax_head,
+    syntax_while : _syntax_while,
+
+
+    #instructions
+    syntax_mov : _syntax_mov,
+    syntax_int : _clean_asm_text,
+    syntax_call : _clean_asm_text,
+    syntax_push : _clean_asm_text,
+    syntax_pop : _clean_asm_text,
+    syntax_jmp : _clean_asm_text,
+    syntax_ret : _clean_asm_text,
+    syntax_logic : _clean_asm_text,
+    syntax_syscall : _syntax_syscall,
 
     #math
     syntax_add : _clean_asm_text,
@@ -670,6 +789,7 @@ syntax = {
     syntax_mul : _clean_asm_text,
     syntax_inc : _syntax_incdec,
     syntax_dec : _syntax_incdec,
+    syntax_shift : _syntax_shift,
 
     #fmath
     syntax_float_to_int : _syntax_float_to_int,
