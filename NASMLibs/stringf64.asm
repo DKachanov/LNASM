@@ -9,8 +9,8 @@ section .text
 
 stringf.len:
       ; stringf.len(QWORD PTR (string) addr) -> QWORD (integer) len
-      
-      mov rbx, [rsp+8]
+      push rbx
+      mov rbx, [rsp+16]
       mov  rax, rbx
 
 stringf.lp:
@@ -25,16 +25,20 @@ stringf.lp:
 stringf.lpend:
       
       sub rax, rbx
-      
-      ret
+      pop rbx
+      ret 8
 
 ;;endfunc
 
 stringf.StrToNum:
       ;stringf.StrToNum(QWORD PTR (string) str, QWORD (int) length) -> QWORD (int) num
 
-      mov rdx, [rsp+8] ; our string
-      mov rsi, [rsp+16]
+      push rdx
+      push rsi
+      push rcx
+
+      mov rdx, [rsp+32] ; our string
+      mov rsi, [rsp+40]
       xor rax, rax ; zero a "result so far"
 
       cmp byte [rdx], "-"
@@ -67,15 +71,17 @@ stringf.StrToNum:
       
 
       .done:
-      mov rdx, [rsp+8]
+      mov rdx, [rsp+32]
       
       cmp byte [rdx], "-"
       jne .ret
       neg rax
 
       .ret:
-      
-      ret
+      pop rcx
+      pop rsi
+      pop rdx
+      ret 16
 
 ;;endfunc
 
@@ -92,8 +98,13 @@ stringf.NumToStr:
       ;stringf.NumToStr(QWORD (int) number, QWORD PTR (string) string) -> QWORD (int) result
       ;write value in QWORD PTR string
 
-      mov rax, qword [rsp+8] ; QWORD (int) number
-      mov rbx, qword [rsp+16] ; QWORD PTR (str) String
+      push rax
+      push rbx
+      push rcx
+      push rdx
+      push rdi
+      mov rax, qword [rsp+48] ; QWORD (int) number
+      mov rbx, qword [rsp+56] ; QWORD PTR (str) String
       mov rcx, 0x7fffffffffffffff
       cmp rax, rcx
       jl .c
@@ -143,17 +154,25 @@ stringf.NumToStr:
     mov qword [stringf.string], 0
     mov qword [stringf.length], 0
     mov qword [stringf.counter], 0
-    ret
+    pop rdi
+    pop rdx
+    pop rcx
+    pop rbx
+    pop rax
+    ret 16
 
 ;;endfunc
 
 stringf.compare:
             ; array.compare(QWORD PTR (string) addr1, QWORD PTR (string) addr2, QWORD (integer) length) -> QWORD (integer) [0,1]
-        
+        push rdx
+        push rcx
+        push rsi
+        push rdi
         mov rdx, 0
-        mov rcx, [rsp+24]
-        mov rsi, [rsp+16]
-        mov rdi, [rsp+8]
+        mov rcx, [rsp+56]
+        mov rsi, [rsp+48]
+        mov rdi, [rsp+40]
             
             cld
 
@@ -162,20 +181,28 @@ stringf.compare:
 
 .false:
     mov rax, 0
-    
-    ret
+    pop rdx
+    pop rcx
+    pop rsi
+    pop rdi
+    ret 24
 
 .true:
     mov rax, 1
-    
-    ret
+    pop rdx
+    pop rcx
+    pop rsi
+    pop rdi
+    ret 24
 
 ;;endfunc
 
 stringf.reset:
       ;stringf.reset(QWORD PTR (string) str, QWORD PTR (int) length)
-      mov rsi, [rsp+8]
-      mov rcx, [rsp+16]
+      push rsi
+      push rcx
+      mov rsi, [rsp+24]
+      mov rcx, [rsp+32]
 
       .loop:
             mov byte [rsi], 0
@@ -187,7 +214,9 @@ stringf.reset:
             jmp .loop
 
       .end:
-      ret
+      pop rcx
+      pop rsi
+      ret 16
 
 ;;endfunc
 
@@ -201,12 +230,17 @@ section .text
 
 stringf.T_convert:
       ; stringf.T_convert(QWORD PTR (array: [qword s, qword ns]) T_STRUCT, QWORD PTR (string) string)
-      
+      push rsi
+      push rdi
+      push rax
+      push rbx
+      push rcx
+      push rdx
       push rbp
       mov rbp, rsp
 
-      mov rsi, [rbp+16] ; T_STRUCT
-      mov rdi, [rbp+24] ; string
+      mov rsi, [rbp+64] ; T_STRUCT
+      mov rdi, [rbp+72] ; string
       mov rax, [rsi] ; seconds
       mov rbx, [rsi+8] ; nanoseconds
 
@@ -215,13 +249,13 @@ stringf.T_convert:
       call stringf.NumToStr
       ;stringf.NumToStr(rax, rdi)
       
-      mov rdi, [rbp+24] ; string
+      mov rdi, [rbp+72] ; string
       push rdi
       call stringf.len
       ;stringf.len(rdi)
       mov [stringf.time.res1], rax ;saving length of seconds
 
-      mov rdx, [rbp+24]
+      mov rdx, [rbp+72]
       add rdx, rax
       mov byte [rdx], "." ; putting dot after seconds
       mov [stringf.time.res1], rdx ; saving PTR after seconds & dot
@@ -239,7 +273,7 @@ stringf.T_convert:
             jmp .fill
       .fill.end:
 
-      mov rsi, [rbp+16] ; T_STRUCT
+      mov rsi, [rbp+64] ; T_STRUCT
       mov rbx, [rsi+8] ; nanoseconds
 
       push stringf.T_STRUCT_str1
@@ -274,16 +308,26 @@ stringf.T_convert:
 
       mov rsp, rbp
       pop rbp
-      ret
+      pop rdx
+      pop rcx
+      pop rbx
+      pop rax
+      pop rdi
+      pop rsi
+      ret 16
 
 ;;endfunc
 
 stringf.split:
       ; stringf.split(QWORD PTR (string) string, QWORD (int) len, QWORD (int) character) -> QWORD (int) index
+      push rbx
+      push rcx
+      push rdx
+      push rdi
 
-      mov rbx, [rsp+8]
-      mov rcx, [rsp+16]
-      mov rdx, [rsp+24]
+      mov rbx, [rsp+40]
+      mov rcx, [rsp+48]
+      mov rdx, [rsp+56]
       mov rdi, 0
 
       .loop:
@@ -301,32 +345,50 @@ stringf.split:
 
       .splited:
             mov rax, rdi
-            ret
+            pop rdi
+            pop rdx
+            pop rcx
+            pop rbx
+            ret 24
 
       .end:
             mov rax, -1
-            ret
+            pop rdi
+            pop rdx
+            pop rcx
+            pop rbx
+            ret 24
 
 ;;endfunc
 
 stringf.copyto:
       ; stringf.copyto(QWORD PTR (string) str1, QWORD PTR (string) str2, QWORD (int) length)
-
-      mov rsi, [rsp+8]
-      mov rdi, [rsp+16]
-      mov rcx, [rsp+24]
+      push rsi
+      push rdi
+      push rcx
+      mov rsi, [rsp+32]
+      mov rdi, [rsp+40]
+      mov rcx, [rsp+48]
       cld
       rep movsb
-      ret
+      pop rcx
+      pop rdi
+      pop rsi
+      ret 24
 
 ;;endfunc
 
 stringf.replace:
       ; stringf.replace(QWORD PTR (string) str, QWORD (byte) char_to_replace, QWORD (byte) replace_with_char, QWORD (int) len)
-      mov rsi, [rsp+8]
-      mov rdx, [rsp+16]
-      mov rbx, [rsp+24]
-      mov rcx, [rsp+32]
+      push rsi
+      push rdx
+      push rbx
+      push rcx
+
+      mov rsi, [rsp+40]
+      mov rdx, [rsp+48]
+      mov rbx, [rsp+56]
+      mov rcx, [rsp+64]
 
       .loop:
             dec rcx
@@ -345,7 +407,11 @@ stringf.replace:
             jmp .loop
 
       .end:
-            ret
+            pop rcx
+            pop rbx
+            pop rdx
+            pop rsi
+            ret 32
 
 ;;endfunc
 
@@ -363,10 +429,13 @@ stringf.FloatToString:
       ;(x*?).(x*12)
 
       ;18446744073709551615
+      push rbx
+      push rdx
+      push rdi
 
-      mov rdi, [rsp+16]
+      mov rdi, [rsp+40]
 
-      fld qword [rsp+8]
+      fld qword [rsp+32]
       fild qword [stringf._1012]
       fmul
       fistp qword [stringf._res]
@@ -410,26 +479,31 @@ stringf.FloatToString:
       push qword [stringf._res]
       call stringf.NumToStr
 
-      sub rdi, [rbp+24]
+      sub rdi, [rbp+48]
       mov rax, rdi
 
       mov rsp, rbp
       pop rbp
-      ret
+      pop rdi
+      pop rdx
+      pop rbx
+      ret 16
 
 ;;endfunc
 
 stringf.StringToFloat:
       ; stringf.StringToFloat(QWORD PTR (string) addr, QWORD (int) length) -> QWORD (float) num
-
-      mov rdi, [rsp+8]
-      mov rcx, [rsp+16]
+      push rdi
+      push rcx
+      push rbx
+      mov rdi, [rsp+32]
+      mov rcx, [rsp+40]
 
       push rbp
       mov rbp, rsp
 
       push rcx
-      push qword [rbp+16]
+      push qword [rbp+40]
       call stringf.StrToNum
 
       mov qword [stringf._res],  rdi
@@ -441,7 +515,7 @@ stringf.StringToFloat:
       mov rax, [stringf._res]
       inc rax
 
-      mov rdi, [rbp+16]
+      mov rdi, [rbp+40]
       sub rcx, qword [stringf._res]
       add rdi, qword [stringf._res]
       push rcx
@@ -455,7 +529,7 @@ stringf.StringToFloat:
 
       mov rax, [stringf._res]
       inc rax
-      mov rcx, [rbp+24]
+      mov rcx, [rbp+48]
       sub rcx, rax
 
       push rcx
@@ -471,10 +545,12 @@ stringf.StringToFloat:
 
       mov rsp, rbp
       pop rbp
-
+      pop rbx
+      pop rcx
+      pop rdi
       mov rax, qword [stringf._res]
 
-      ret
+      ret 16
 
 
       stringf.math.ipower:
@@ -502,5 +578,5 @@ stringf.StringToFloat:
                 ret
 
         stringf.math.ipower.end:
-                ret
+                ret 16
 

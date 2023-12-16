@@ -10,11 +10,12 @@ section .data
 section .text
 
 math.factorial:
-        ; math.factorial(QWORD (int) number) -> QWORD (int)
+        ; math.factorial(QWORD (int) number) -> QWORD (int) value
+        push  rbx
         push  rbp
-
         mov  rbp,rsp
-        mov  rax, [rbp+16]
+
+        mov  rax, [rbp+24]
         
         cmp  rax,1
         je .end_factorial
@@ -23,17 +24,17 @@ math.factorial:
         
         push  rax
         
-        call math.factorial
+        call math.factorial.loop
         
-        mov  rbx, [rbp+16]
+        mov  rbx, [rbp+24]
         imul  rax,rbx
 
 
 .end_factorial: 
         mov  rsp,rbp
         pop  rbp
-
-        ret
+        pop  rbx
+        ret 8
 
 ;;endfunc
 
@@ -43,7 +44,7 @@ math.sqrt:
         fsqrt
         fstp qword [rsp+8]
         mov rax, [rsp+8]
-        ret
+        ret 8
 
 ;;endfunc
 
@@ -53,7 +54,7 @@ math.radians:
         fmul qword [rsp+8]
         fstp qword [rsp+8]
         mov rax, qword [rsp+8]
-        ret
+        ret 8
 
 ;;endfunc
 
@@ -63,7 +64,7 @@ math.sin:
         fsin
         fstp qword [rsp+8]
         mov rax, qword [rsp+8]
-        ret
+        ret 8
 
 ;;endfunc
 
@@ -73,7 +74,7 @@ math.cos:
         fcos
         fstp qword [rsp+8]
         mov rax, qword [rsp+8]
-        ret
+        ret 8
 
 ;;endfunc
 
@@ -83,7 +84,7 @@ math.tan:
         fptan
         fstp qword [rsp+8]
         mov rax, qword [rsp+8]
-        ret
+        ret 8
 
 ;;endfunc
 math.ctg:
@@ -100,11 +101,12 @@ math.ctg:
         fstp qword [rsp]
         mov rax, qword [rsp]
         add rsp, 24
-        ret
+        ret 8
 ;;endfunc
 
 math.abs:
         ;math.abs(QWORD (int) number) -> QWORD (int) absolute of number
+        push rbx
         mov rax, [rsp+8]
         mov rbx, 0x7fffffffffffffff
         cmp rax, rbx
@@ -113,14 +115,16 @@ math.abs:
         .c:
         neg rax
         .ret:
-        ret
+        pop rbx
+        ret 8
 
 ;;endfunc
 
 math.ipower:
         ; math.ipower(QWORD (int) number, QWORD (int) power) -> QWORD (int) value
-        mov rax, [rsp+8]
-        mov rcx, [rsp+16]
+        push rcx
+        mov rax, [rsp+16]
+        mov rcx, [rsp+24]
 
         cmp rcx, 1
         je math.ipower.end
@@ -128,6 +132,7 @@ math.ipower:
         cmp rcx, 0
         je math.ipower.p0
 
+        push rbx
         mov rbx, rax
 
         math.ipower.loop:
@@ -140,15 +145,18 @@ math.ipower:
 
         math.ipower.p0:
                 mov rax, 1
-                ret
+                pop rcx
+                ret 16
 
         math.ipower.end:
-                ret
+                pop rbx
+                pop rcx
+                ret 16
 
 ;;endfunc
 
 math.log:
-        ; math.log(QWORD (float) base, QWORD (float) num)
+        ; math.log(QWORD (float) base, QWORD (float) num) -> QWORD (float) result
         ; Log(2)(num)/Log(2)(base)  to get Log(base)(num)
         push 1
         fld qword [rsp] ;y 
@@ -167,14 +175,14 @@ math.log:
         fstp qword [rsp+16]
         mov rax, qword [rsp+16]
         add rsp, 8
-        ret
+        ret 16
 ;;endfunc
 
 section .data
         math.res dq 0
 
 math.round:
-        ; math.round(QWORD (float) num, QWORD (int) after_dot)
+        ; math.round(QWORD (float) num, QWORD (int) after_dot) -> QWORD (float) result
 
         push rbp
         mov rbp, rsp
@@ -201,4 +209,4 @@ math.round:
         mov rsp, rbp
         pop rbp
 
-        ret 
+        ret 16

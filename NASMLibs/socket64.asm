@@ -113,45 +113,65 @@ section .data
 
     socket.ADDR_REUSE equ 2
 
+;;required
+
 section .text
 
 socket.socket:
     ; socket.socket(QWORD (int) family, QWORD (int) type, QWORD (int) protocol) -> QWORD (fd) socket
-    
+    push rdi
+    push rsi
+    push rdx    
     mov     rax, 41
     
-    mov     rdi, [rsp+8]   ; family
-    mov     rsi, [rsp+16]  ; type
-    mov     rdx, [rsp+24]  ; protocol
+    mov     rdi, [rsp+32]   ; family
+    mov     rsi, [rsp+40]  ; type
+    mov     rdx, [rsp+48]  ; protocol
     
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
 
+;;endfunc
 
 socket.connect:
     ; socket.connect(QWORD PTR (fd) socket, QWORD PTR (sockaddr struct) addr, QWORD (int) length)
-    
+    push rdi
+    push rsi
+    push rdx
     mov rax, 42
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
+    mov rdx, [rsp+48]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
 
+;;endfunc
 
 socket.accept:
     ; socket.accept(QWORD (fd) socket, QWORD PTR (upeer_sockaddr struct) addr, QWORD PTR (int) length) -> QWORD (fd) socket_a
-
+    push rdi
+    push rsi
+    push rdx
     mov rax, 43
     mov rdi, [rsp+8]
     mov rsi, [rsp+16]
     mov rdx, [rsp+24]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
 
+;;endfunc
 
 socket.sendto: 
     ; socket.sendto(
@@ -164,19 +184,32 @@ socket.sendto:
     ;)
 
 
+    push rax
+    push rdi
+    push rdx
+    push r8
+    push r9
+    push r10
 
     mov rax, 44
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
-    mov r8,  [rsp+32]
-    mov r9,  [rsp+40]
-    mov r10, [rsp+48]
+    mov rdi, [rsp+56]
+    mov rsi, [rsp+64]
+    mov rdx, [rsp+72]
+    mov r8,  [rsp+80]
+    mov r9,  [rsp+88]
+    mov r10, [rsp+96]
 
     syscall
-    ret
+    pop r10
+    pop r9
+    pop r8
+    pop rdx
+    pop rdi
+    pop rax
+    ret 48
 
+;;endfunc
 
 socket.recvfrom:
     ; socket.recvfrom(
@@ -188,121 +221,201 @@ socket.recvfrom:
     ;   QWORD (int)                 flags,
     ;)
 
+    push rax
+    push rdi
+    push rdx
+    push r8
+    push r9
+    push r10
+
     mov rax, 45
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
-    mov r8,  [rsp+32]
-    mov r9,  [rsp+40]
-    mov r10, [rsp+48]
+    mov rdi, [rsp+56]
+    mov rsi, [rsp+64]
+    mov rdx, [rsp+72]
+    mov r8,  [rsp+80]
+    mov r9,  [rsp+88]
+    mov r10, [rsp+96]
 
     syscall
-    ret
+    pop r10
+    pop r9
+    pop r8
+    pop rdx
+    pop rdi
+    pop rax
+    ret 48
 
+;;endfunc
 
 socket.sendmsg:
     ; socket.sendmsg(QWORD (fd) socket, QWORD PTR (msghdr struct) msg, QWORD (int) flags)
 
+    push rax
+    push rdi
+    push rsi
+    push rdx
+
     mov rax, 46
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+40]
+    mov rsi, [rsp+48]
+    mov rdx, [rsp+56]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 24
 
+;;endfunc
 
 socket.recvmsg:
     ; socket.recvmsg(QWORD (fd) socket, QWORD PTR (msghdr struct) msg, QWORD (int) flags)
 
+    push rax
+    push rdi
+    push rsi
+    push rdx
     mov rax, 47
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+40]
+    mov rsi, [rsp+48]
+    mov rdx, [rsp+56]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 24
 
+;;endfunc
 
 socket.close:
     ; socket.close(QWORD (fd) socket, QWORD (int) how) -> QWORD (int) error
-    
+    push rdi
+    push rsi
     mov rax, 48
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
+    mov rdi, [rsp+24]
+    mov rsi, [rsp+32]
 
     syscall
-    ret
+    pop rsi
+    pop rdi
+    ret 16
 
+;;endfunc
 
 socket.bind:
     ; socket.bind(QWORD (fd) socket, QWORD PTR (sockAddr struct) addr, QWORD (int) length) -> QWORD (int) error
 
+    push rdi
+    push rsi
+    push rdx
+
     mov rax, 49
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
+    mov rdx, [rsp+48]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
 
+;;endfunc
 
 socket.listen:
     ; socket.listen(QWORD (fd) socket, QWORD (int) max_connections)
 
+    push rax
+    push rdi
+    push rsi
     mov rax, 50
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
 
     syscall
-    ret
+    pop rsi
+    pop rdi
+    pop rax
+    ret 16
 
+;;endfunc
 
 socket.getsockname:
     ; socket.getsockname(QWORD (fd) socket, QWORD PTR (usockaddr struct) addr, QWORD PTR (int) len)
-
+    push rax
+    push rdi
+    push rsi
+    push rdx
     mov rax, 51
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+40]
+    mov rsi, [rsp+48]
+    mov rdx, [rsp+56]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 24
 
+;;endfunc
 
 socket.getpeername:
     ; socket.getpeername(QWORD (fd) socket, QWORD PTR (usockaddr struct) addr, QWORD PTR (int) len)
 
+    push rax
+    push rdi
+    push rsi
+    push rdx
     mov rax, 52
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+40]
+    mov rsi, [rsp+48]
+    mov rdx, [rsp+56]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 24
 
+;;endfunc
 
 socket.socketpair:
     ; socket.socketpair(QWORD (int) family, QWORD (int) type, QWORD (int) protocol, QWORD PTR (int) usockvec)
 
+    push rax
+    push rdi
+    push rsi
+    push rdx
+    push r10
     mov rax, 53
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdi, [rsp+24]
-    mov r10, [rsp+32]
+    mov rdi, [rsp+48]
+    mov rsi, [rsp+56]
+    mov rdx, [rsp+64]
+    mov r10, [rsp+72]
 
     syscall
-    ret
+    pop r10
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 32
 
+;;endfunc
 
 socket.setsockopt:
     ; socket.setsockopt(
@@ -312,18 +425,30 @@ socket.setsockopt:
     ;   QWORD PTR (string) optval
     ;   QWORD (int)        optlen
     ;)
-
+    push rax
+    push rdi
+    push rsi
+    push rdx
+    push r10
+    push r8
     mov rax, 54
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
-    mov r10, [rsp+32]
-    mov r8,  [rsp+40]
+    mov rdi, [rsp+56]
+    mov rsi, [rsp+64]
+    mov rdx, [rsp+72]
+    mov r10, [rsp+80]
+    mov r8,  [rsp+88]
 
     syscall
-    ret
+    pop r8
+    pop r10
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 40
 
+;;endfunc
 
 socket.getsockopt:
     ; socket.getsockopt(
@@ -333,49 +458,81 @@ socket.getsockopt:
     ;   QWORD PTR (string) optval
     ;   QWORD (int)        optlen
     ;)
-
+    push rax
+    push rdi
+    push rsi
+    push rdx
+    push r10
+    push r8
     mov rax, 55
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
-    mov r10, [rsp+32]
-    mov r8,  [rsp+40]
+    mov rdi, [rsp+56]
+    mov rsi, [rsp+64]
+    mov rdx, [rsp+72]
+    mov r10, [rsp+80]
+    mov r8,  [rsp+88]
 
     syscall
-    ret
+    pop r8
+    pop r10
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    ret 40
+
+;;endfunc
 
 
 socket.send:
-    ; socket.send(QWORD (fd) connection, QWORD PTR data, QWORD (int) length)
-    
+    ; socket.send(QWORD (fd) connection, QWORD PTR data, QWORD (int) length) -> QWORD (int) length
+    push rdi
+    push rsi
+    push rdx
     mov rax, 1
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
+    mov rdx, [rsp+48]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
+
+;;endfunc
 
 
 socket.recv:
-    ; socket.recv(QWORD (fd) connection, QWORD PTR buffer, QWORD (int) length)
+    ; socket.recv(QWORD (fd) connection, QWORD PTR buffer, QWORD (int) length) -> QWORD (int) length
 
+    push rdi
+    push rsi
+    push rdx
     mov rax, 0
 
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
+    mov rdx, [rsp+48]
 
     syscall
-    ret
+    pop rdx
+    pop rsi
+    pop rdi
+    ret 24
+
+;;endfunc
 
 socket.StrToAddr:
       ;socket.StrToAddr(QWORD PTR (string) str, QWORD (int) length)
+      push rdx
+      push rsi
+      push rax
+      push rcx
 
-      mov rdx, [rsp+8] ; our string
-      mov rsi, [rsp+16]
+      mov rdx, [rsp+32] ; our string
+      mov rsi, [rsp+40]
       xor rax, rax ; zero a "result so far"
       .top:
       movzx rcx, byte [rdx] ; get a character
@@ -400,4 +557,8 @@ socket.StrToAddr:
 
       jmp .top ; until done
       .done:
-      ret
+      pop rcx
+      pop rax
+      pop rsi
+      pop rcx
+      ret 16

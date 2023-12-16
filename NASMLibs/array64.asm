@@ -5,7 +5,8 @@ section .text
 ;     array.get     -> array_get.lnasm
 ;     array.in      -> array_in.lnasm
 ;     array.copyto  -> matrix.lnasm
-;     array.sort    -> sort.lnasm
+;     array.bubble_sort    -> sort.lnasm
+;	  array.qsort   -> qsort.lnasm
 
 array.reverse:
 	; array.reverse(QWORD PTR (array) array, QWORD (int) length, QWORD (int) type) -> QWORD (int) error
@@ -18,10 +19,15 @@ array.reverse:
 	;	1 = type error
 	;
 
-	mov rsi, [rsp+8] ; PTR array
-	mov rcx, [rsp+16];length
+	push rsi
+	push rcx
+	push rdx
+	push rbx
+
+	mov rsi, [rsp+40] ; PTR array
+	mov rcx, [rsp+48];length
 	mov rdx, rcx; saving it
-	mov rbx, [rsp+24];size
+	mov rbx, [rsp+56];size
 	xor rax, rax
 
 	cmp rbx, 0
@@ -125,64 +131,34 @@ array.reverse:
 
 
 	.end:
-	ret
+	pop rbx
+	pop rdx
+	pop rcx
+	pop rsi
+
+	ret 24
 
 	.error:
 	mov rax, 1
-	ret
+	pop rbx
+	pop rdx
+	pop rcx
+	pop rsi
+	ret 24
 
-
-array.get:
-	; array.get(QWORD PTR (array) addr, QWORD (int) type, QWORD (int) index) -> value
-	; errors -> rbx
-
-	mov rsi, [rsp+8]
-	mov rdx, [rsp+16]
-	mov rcx, [rsp+24]
-	mov rbx, 0
-	mov rax, 0
-
-	cmp rdx, 0
-	jz .byte
-	
-	cmp rdx, 1
-	jz .word
-	
-	cmp rdx, 2
-	jz .dword
-
-	cmp rdx, 3
-	jz .qword
-
-	jmp .error
-
-	.byte:
-		mov al, [rsi+rcx]
-		ret
-
-	.word:
-		mov ax, [rsi+rcx*2]
-		ret
-
-	.dword:
-		mov eax, [rsi+rcx*4]
-		ret
-
-	.qword:
-		mov rax, [rsi+rcx*8]
-		ret
-
-	.error:
-		mov rbx, 1
 
 array.in:
 	; array.in(QWORD PTR (array) addr, QWORD (int) type, QWORD (int) len, QWORD PTR (value) smth)
 	; errors -> rbx
+	push rsi
+	push rdx
+	push rcx
+	push rbx
 
-	mov rsi, [rsp+8]  ; addr
-	mov rdx, [rsp+16] ; type
-	mov rcx, [rsp+24] ; len
-	mov rbx, [rsp+32] ; smth
+	mov rsi, [rsp+40]  ; addr
+	mov rdx, [rsp+48] ; type
+	mov rcx, [rsp+56] ; len
+	mov rbx, [rsp+64] ; smth
 
 
 	cmp rdx, 0
@@ -234,22 +210,34 @@ array.in:
 	.true:
 		mov rbx, 0
 		mov rax, 1
-		ret
+		jmp .ret
 
 	.false:
 		mov rbx, 0
 		mov rax, 0
-		ret
+		jmp .ret
 
 
 	.error:
 		mov rbx, -1
-		ret
+		jmp .ret
 
+	.ret:
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rsi
+	ret 32
 
 array.copyto:
 	; array.copyto(QWORD PTR (array) array1, QWORD PTR (array) array2, QWORD (int) type, QWORD (int) length)
 	; errors -> rbx
+
+	push rsi
+	push rdi
+	push rdx
+	push rcx
+	push rbx
 
 	mov rsi, [rsp+8]
 	mov rdi, [rsp+16]
@@ -270,23 +258,30 @@ array.copyto:
 	.byte:
 		cld
     	rep movsb
-    	ret
+    	jmp .ret
     .word:
     	cld
     	rep movsw
-    	ret
+    	jmp .ret
     .dword:
     	cld
     	rep movsd
-    	ret
+    	jmp .ret
     .qword:
     	cld
     	rep movsq
-    	ret
+    	jmp .ret
 
 	.error:
 		mov rbx, 1
-		ret
+	
+	.ret:
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rdi
+	pop rsi
+	ret 32
 
 ;;endfunc
 
@@ -294,13 +289,21 @@ array.bubble_sort:
 	; array.bubble_sort(QWORD PTR (int array) input, QWORD (int) len, QWORD (int) type)
 	; type error -> rbx (-1)
 
-	mov rsi, [rsp+8]
-	mov rdx, [rsp+16]
+	push rsi
+	push rdx
+	push r9
+	push rdi
+	push rcx
+	push rax
+	push rbx
+
+	mov rsi, [rsp+64]
+	mov rdx, [rsp+72]
 	mov r9, rsi
 	mov rdi, rdx
 	mov rcx, 0
 
-	mov rax, [rsp+24]
+	mov rax, [rsp+80]
 
 	push rbp
 	mov rbp, rsp
@@ -411,12 +414,108 @@ array.bubble_sort:
 		mov rcx, 0
 		jmp qword [rsp]
 	.ret:
+
 		mov rsp, rbp
 		pop rbp
-		ret
+		pop rbx
+		pop rax
+		pop rcx
+		pop rdi
+		pop r9
+		pop rdx
+		pop rsi
+		ret 24
 
 	.terror:
 		mov rbx, -1
 		mov rsp, rbp
 		pop rbp
-		ret
+		pop rbx
+		pop rax
+		pop rcx
+		pop rdi
+		pop r9
+		pop rdx
+		pop rsi
+		ret 24
+
+section .data
+    array_ptr      dq 0
+    outer_boundary dq 0  ; boundary for the outer loop
+    inner_boundary dq 0  ; boundary for the inner loop
+
+section .text
+
+array.qsort:
+	push rax
+	push rbx
+	push rsi
+	push rdi
+	push rdx
+	push r8
+	push r9
+	push r10
+	push r11
+	;array.qsort(QWORD (array) array, QWORD (int) length)
+   	mov rsi, [rsp+80]
+   	mov rdx, [rsp+88] 
+    mov [array_ptr],  rsi			; Save the pointer
+    
+    ;; for (i < size - 1)
+    mov [outer_boundary], rdx			; Save and set the value of outer loop's bounds
+    sub qword [outer_boundary], 8
+
+    ;; for (j < size)
+    mov [inner_boundary], rdx			; Save and set the value of inner loop's bounds
+
+    ;; r8 will be used as 'i'
+    xor r8, r8 
+    .outer_loop:
+        mov rsi, [array_ptr]			; Bring the array into RSI
+        add rsi, r8      			; Take the pointer to the element to be processed
+        mov rdx, rsi				; RDX will be used as the pointer to the smallest element in the array
+        
+        ;; r9 will be used as 'j'
+        mov r9, r8
+        add r9, 8			; Bring R9 to one element ahead of the R8
+        
+        ;; rdi is pointer at 'j'
+        .inner_loop:
+            mov rdi, [array_ptr]
+            add rdi, r9     			; (array + j) - a pointer
+
+            mov rax, [rdi]  			; array[j] - the element
+            mov rbx, [rdx]  			; array[rdx] - the current minimum element
+
+            cmp rax, rbx
+            jl .if_less
+            jmp .cont
+            
+            .if_less:
+               mov rdx, rdi			; Change the minimum pointer in RDX to the newly found smaller element
+            .cont:
+                add r9, 8		; Take the R9 (j) to the next element
+                cmp r9, [inner_boundary]
+        jl .inner_loop
+
+        ;; Swap the values
+        mov r10, [rsi]				; RSI is pointing to the array[i]
+        mov r11, [rdx]				; RDX is pointing to the smallest element in the array that's left
+        
+        mov [rsi], r11
+        mov [rdx], r10
+
+        add r8, 8
+        cmp r8, [outer_boundary]
+    jl .outer_loop
+   	pop r11
+   	pop r10
+   	pop r9
+   	pop r8
+   	pop rdx
+   	pop rdi
+   	pop rsi
+   	pop rbx
+   	pop rax
+
+ret 16

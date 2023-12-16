@@ -63,17 +63,18 @@ syntax_string           = compile(r"[ \t]*string[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=
 syntax_const            = compile(r"[ \t]*const[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+= .+")
 
 #instructions
-syntax_push    = compile(r"[ \t]*push .+")
-syntax_pop     = compile(r"[ \t]*pop .+")
-syntax_ret     = compile(r"[ \t]*ret[ \t]*")
-syntax_jmp     = compile(r"[ \t]*jmp .+")
-syntax_call    = compile(r"[ \t]*call[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
-syntax_int     = compile(r"[ \t]*int .+")
-syntax_logic   = compile(r"[ \t]*(and|or|xor|test|not) .*, .*")
-syntax_mov     = compile(r".* -> .*")
-syntax_inc     = compile(r"[ \t]*.+\+\+[ \t]*")
-syntax_dec     = compile(r"[ \t]*.+\-\-[ \t]*")
-syntax_syscall = compile(r"[ \t]*syscall( .+){0,1}[\t ]*")
+syntax_push       = compile(r"[ \t]*push .+")
+syntax_pop        = compile(r"[ \t]*pop .+")
+syntax_pushpop_aq = compile(r"[ \t]*(pushaq|popaq)[ \t]*") 
+syntax_ret        = compile(r"[ \t]*ret?([ \t]+[0-9]+[ \t]+)[ \t]*")
+syntax_jmp        = compile(r"[ \t]*jmp .+")
+syntax_call       = compile(r"[ \t]*call[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
+syntax_int        = compile(r"[ \t]*int .+")
+syntax_logic      = compile(r"[ \t]*(and|or|xor|test|not) .*, .*")
+syntax_mov        = compile(r".* -> .*")
+syntax_inc        = compile(r"[ \t]*.+\+\+[ \t]*")
+syntax_dec        = compile(r"[ \t]*.+\-\-[ \t]*")
+syntax_syscall    = compile(r"[ \t]*syscall( .+){0,1}[\t ]*")
 
 #macros
 syntax_global         = compile(r"[ \t]*#global [a-z|A-Z|_][\.\w]*.*")
@@ -288,6 +289,16 @@ def _syntax_syscall(string, translator, c):
     translator.write_to_text("syscall")
 
 
+def _syntax_pushpop_aq(string, translator, c):
+    """
+        Push all registers
+        and
+        Pop all registers
+    """
+    if "pushaq" in string:
+        translator.write_to_text("pushaq")
+    else:
+        translator.write_to_text("popaq")
 #macros func
 def _syntax_global(string, translator, c):
     """
@@ -781,7 +792,8 @@ syntax = {
     syntax_ret : _clean_asm_text,
     syntax_logic : _clean_asm_text,
     syntax_syscall : _syntax_syscall,
-
+    syntax_pushpop_aq : _syntax_pushpop_aq,
+    
     #math
     syntax_add : _clean_asm_text,
     syntax_sub : _clean_asm_text,

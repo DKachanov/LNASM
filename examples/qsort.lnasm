@@ -1,0 +1,35 @@
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/time64.asm;
+#from "NASMLibs/array64.asm" append "array.copyto";
+#from "NASMLibs/array64.asm" append "array.bubble_sort";
+#from "NASMLibs/stringf64.asm" append "stringf.T_convert";
+#from "NASMLibs/stringf64.asm" append "stringf.NumToStr";
+#from "NASMLibs/stringf64.asm" append "stringf.len";
+#global _start;
+
+::_start;
+
+    list qword save = [1032423, 32146, 4241651242, 214, 21455124, 124914, 49214, 14215, 5236, 2623];
+    RES byte result[15];
+    RES qword main[10];
+    RES qword time1[2];
+    RES qword time2[2];
+
+    time.time(time1);
+
+    2000000 -> rcx;
+
+    while(rcx > 0) {
+        array.copyto(save, main, save.type, save.len);
+        array.qsort(main, qword [save.len]);
+        rcx--;
+    };
+
+    time.time(time2);
+    time.sub(time2, time1);
+    stringf.T_convert(time2, result);
+    stringf.len(result);
+    stdio.print(result, rax);
+
+::end;
+    syscall 60, 0;
