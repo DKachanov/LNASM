@@ -1,7 +1,7 @@
 import re
 re._MAXCACHE = 3000
 from errors import *
-import os, sys
+import os, sys, time
 
 types = {
     "byte" : "db",
@@ -361,7 +361,8 @@ def _syntax_func(string, translator, c):
     void = False
     nosave = False
 
-    if not "nosave" in string.split(head)[1].split("{", 1)[0]:
+
+    if not "nosave" in head.split("{", 1)[0]:
         if "void" in string.split("function", 1)[0]:
 
             translator.write_to_text(f"pushaq")
@@ -906,8 +907,29 @@ def rep_spec_chars(value):
 
     return value
 
+def split(text, char):
+    quotes   = 0
+    brackets = 0
+    matches  = []
+
+    before = -1
+
+    for c, i in enumerate(text):
+        if i == "\"":
+            quotes = 0 if quotes else 1
+        elif i == "{" and not quotes:
+            brackets += 1
+        elif i == "}" and not quotes:
+            brackets -= 1
+        elif i == char and not quotes and not brackets:
+            matches.append(text[before+1:c])
+            before = c
+
+    return matches
+
 def ToASM(lines, translator):
-    for line in syntax_split.split(lines):
+
+    for line in split(lines, ";"):
         translator.c += 1 #line counter
 
 
@@ -951,16 +973,16 @@ def ToASM(lines, translator):
                 _syntax_if(line, translator, translator.c)
                 not_matched = False
 
-        elif "while" in line and "{" in line:
+        if "while" in line and "{" in line:
             if syntax_while.match(line.split("{")[0]):
                 _syntax_while(line, translator, translator.c)
                 not_matched = False
 
-        elif "function" in line and "{" in line:
+        if "function" in line and "{" in line:
             if syntax_func.match(line.split("{")[0]):
                 _syntax_func(line, translator, translator.c)
                 not_matched = False
-        else:
+        if not_matched:
             for s in syntax.keys():
                 if s.match(line):
                     syntax[s](line, translator, translator.c)
