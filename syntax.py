@@ -541,10 +541,16 @@ def _syntax_if(string, translator, line):
         l = x.span()[1]
         blocks.append(block)
 
-    _else_block = string[l:]
-    
+    noelse = False
+    if blocks == []:
+        blocks.append(string)
+        noelse = True
+    else:
+        _else_block = string[l:]
+
     z = 0
     for cond in blocks:
+        print(cond)
         z+=1
         c = _cond.match(cond)
         if not c:
@@ -567,10 +573,12 @@ def _syntax_if(string, translator, line):
             translator.write_to_text("fcomi st0, st1")
             translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{line}")
         else:
+            print(1)
             translator.write_to_text(f"cmp {a}, {b} ; {c}")
             translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{line}")
-
-    ToASM(_else_block.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
+    
+    if not noelse:
+        ToASM(_else_block.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
     translator.write_to_text(f"jmp _if_construction{line}_end")
 
     z = 0
