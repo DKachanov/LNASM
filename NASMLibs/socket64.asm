@@ -161,9 +161,9 @@ socket.accept:
     push rsi
     push rdx
     mov rax, 43
-    mov rdi, [rsp+8]
-    mov rsi, [rsp+16]
-    mov rdx, [rsp+24]
+    mov rdi, [rsp+32]
+    mov rsi, [rsp+40]
+    mov rdx, [rsp+48]
 
     syscall
     pop rdx
