@@ -22,17 +22,14 @@
 
 ::_start;
 
-    qword sock;
-    qword conn;
-    qword len;
-    qword fd;
-    qword size;
-    qword filebuff;
+    qword sock, conn, len, fd, size, filebuff;
     RES byte buffer[255];
     statbuf stat;
 
     socketAddr Server[socket.AF_INET, 127.0.0.1, 8080, 0];
     const Server.len = $ - Server;
+    socketAddr Connection[];
+    const Connection.len = $ - Connection;
 
     /* vars */
 
@@ -40,8 +37,7 @@
     /* handles Ctrl+C -> end */
 
 
-    socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-    rax -> [sock];
+    qword [sock] = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
 
     socket.bind(qword [sock], Server, Server.len);
     socket.listen(qword [sock], 1);
@@ -51,29 +47,21 @@
     /* creating socket */
 
     ::.loop; /* server loop */
-    socket.accept(qword [sock], 0, 0);
-    rax -> [conn];
-
-    socket.recv(qword [conn], buffer, 255);
-    rax -> [len];
+    qword [conn] = socket.accept(qword [sock], 0, 0);
+    qword [len]  = socket.recv(qword [conn], buffer, 255);
 
     handler(); /* handler */
 
     socket.close(qword [conn], socket.SHUT_RDWR); /* closing connection */
     jmp .loop;
-
 ::end;
     stdio.print(undefined "\nShutting down the server...\n", 29);
     socket.close(qword [sock], socket.SHUT_RDWR);
     stdf.exit(0);
 
 
-::handler;
+void function handler() nosave {
     qword handler.pointer;
-
-    push rbp;
-    rsp -> rbp;
-
     stringf.split(buffer, qword [len], qword " ");
     
     /*
@@ -105,17 +93,28 @@
 
     /* routes: */
     stringf.compare(qword [handler.pointer], undefined "/ ", 2);
-        if rax == true:
-            handler.index.html;
+    if (rax == true) {
+            open(undefined "index.html");
+            socket.send(qword [conn], consts.http200, consts.http200Len);
+            socket.send(qword [conn], qword [filebuff], qword [stat.size]);
+
+            jmp handler.e200;
+    };
+
     stringf.compare(qword [handler.pointer], undefined "/test ", 6);
-        if rax == true: 
-            handler.test.html;
+    if (rax == true) {
+            open(undefined "test.html");
+
+            socket.send(qword [conn], consts.http200, consts.http200Len);
+            socket.send(qword [conn], qword [filebuff], qword [stat.size]);
+            jmp handler.e200;
+    };
 
     /* else 404*/
     jmp handler.e404;
 
     ::handler.e200;
-        stdio.print(undefined " - 200\n", 8);
+        stdio.print(undefined " - 200\n", 7);
         jmp handler.end;
 
 
@@ -123,29 +122,10 @@
         open(undefined "p404.html");
         socket.send(qword [conn], consts.http404, consts.http404Len);
         socket.send(qword [conn], qword [filebuff], qword [stat.size]);
-        stdio.print(undefined " - 404\n", 8);
+        stdio.print(undefined " - 404\n", 7);
 
     ::handler.end;
-        rbp -> rsp;
-        pop rbp;
-        ret;
-
-/* / */
-::handler.index.html;
-    open(undefined "index.html");
-    socket.send(qword [conn], consts.http200, consts.http200Len);
-    socket.send(qword [conn], qword [filebuff], qword [stat.size]);
-
-    jmp handler.e200;
-
-/* /test */
-
-::handler.test.html;
-    open(undefined "test.html");
-
-    socket.send(qword [conn], consts.http200, consts.http200Len);
-    socket.send(qword [conn], qword [filebuff], qword [stat.size]);
-    jmp handler.e200;
+};
 /* subs */
 
 ::open;
@@ -154,19 +134,19 @@
     rsp -> rbp;
     file.stat(qword [rbp+16], stat);
     stdf.allocate_mem(qword [stat.size]);
-    if rbx == true: error;
-    rax -> [filebuff];
+    if (rbx != true) {
+        rax -> [filebuff];
 
-    file.open(qword [rbp+16], 0);
-    rax -> [fd];
+        file.open(qword [rbp+16], 0);
+        rax -> [fd];
 
-    file.read(qword [fd], qword [filebuff], qword [stat.size]);
-    file.close(qword [fd]);
+        file.read(qword [fd], qword [filebuff], qword [stat.size]);
+        file.close(qword [fd]);
 
-    rbp -> rsp;
-    pop rbp;
-    ret;
-
-
-::error;
-    stdio.print(undefined "Failed to allocate memory", 25);
+        rbp -> rsp;
+        pop rbp;
+        ret;
+    } else {
+        stdio.print(undefined "Failed to allocate memory", 25);
+        syscall 60, 0;
+    };
