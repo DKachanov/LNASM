@@ -117,22 +117,8 @@ undefine smth:
 	#undefine NULL
 
 if construction:
-	regex: [ \t]*if .+ (==|!=|>|<|>=|<=) .+: \.*[a-z|A-Z|_]\w*[ \t]*
 	
-	if a < b: ...
-	if 4 <= x: ...
-
-	example:
-		call ...
-		if rax == 1: true
-		; else is here
-		...
-		::true
-		...
-
-	!WARNING: can compare only integers!!!
-	if you want to compare float & integer or float & float
-	use this:
-	float qword a = 5.0
-	5 -> rax
-	if rax == float qword [a]: ...
+	
+	if (a < b) {...}
+	else if (a > b) {...}
+	else {...};
