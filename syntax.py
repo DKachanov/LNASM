@@ -129,10 +129,11 @@ syntax_float_conv   = re.compile(r"[ \t]*float .*")
 
 reg_list = ['rax', 'rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9']
 #if
-_else = re.compile(r"\belse\b")
-_cond = re.compile(r"(.+)")
-_comb = re.compile(r"(==|!=|>|<|>=|<=)")
-
+_else  = re.compile(r"\belse\b")
+_float = re.compile(r"\bfloat\b")
+_cond  = re.compile(r"(.+)")
+_comb  = re.compile(r"(==|!=|>|<|>=|<=)")
+_regs  = re.compile(r"\b(rbp|ebp|bp|es|fs|gs|ss|rax|eax|rbx|ebx|rcx|ecx|rdx|edx|rsp|esp|sp|rsi|esi|si|rdi|edi|di|(a|b|c|d)(x|h|l))\b")
 #data func
 def _syntax_int_data(string, translator, c):
     """
@@ -554,7 +555,19 @@ def _syntax_if(string, translator, line):
 
         c = c.split("{", 1)[0].replace("if", "").replace("(", "").replace(")", "")
         a,b = c.split(m.group())
-        translator.write_to_text(f"cmp {a}, {b} ; {c}\n{conditions[m.group()]} _if_construction{z}_{line}")
+        f = _float.search(a), _float.search(b)
+        i = 8
+        if f[0] or f[1]:
+            if _regs.search(a.lower()) or _regs.search(b.lower()):
+                valueError(line, f"register cannot be used in float comparament ({c})")
+
+            translator.write_to_text(f"fld {b.split('float', 1)[1]}" if f[1] else f"fild {b}")
+            translator.write_to_text(f"fld {a.split('float', 1)[1]}" if f[0] else f"fild {a}")
+            translator.write_to_text("fcomi st0, st1")
+            translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{line}")
+        else:
+            translator.write_to_text(f"cmp {a}, {b} ; {c}")
+            translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{line}")
 
     ToASM(_else_block.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
     translator.write_to_text(f"jmp _if_construction{line}_end")

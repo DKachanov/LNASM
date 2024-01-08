@@ -41,3 +41,7 @@ if (...) {<br />
 } else {<br />
     ...;<br />
 };<br />
+
+### Added float comparament to if
+if (_float_ qword \[a\] > _float_ qword \[b\] )<br />
+_float_ can also be used only for one of arguments
