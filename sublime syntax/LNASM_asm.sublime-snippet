@@ -1,0 +1,7 @@
+<snippet>
+	<content><![CDATA[
+#asm .$1 $2;
+]]></content>
+	<tabTrigger>#asm</tabTrigger>
+	<description>raw asm code</description>
+</snippet>

@@ -1,0 +1,7 @@
+<snippet>
+	<content><![CDATA[
+#global $1;
+]]></content>
+	<tabTrigger>#global</tabTrigger>
+	<description>globalize _start</description>
+</snippet>

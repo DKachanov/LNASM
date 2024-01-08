@@ -1,0 +1,14 @@
+<snippet>
+	<content><![CDATA[
+::_start;
+	$1;
+
+::end;
+	stdf.exit(0);
+]]></content>
+	<!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+	<tabTrigger>_start</tabTrigger>
+	<!-- Optional: Set a scope to limit where the snippet will trigger -->
+	<!-- <scope>source.python</scope> -->
+	<description>_start point</description>
+</snippet>

@@ -1,0 +1,7 @@
+<snippet>
+	<content><![CDATA[
+#append NASMLibs/$1.asm;
+]]></content>
+	<tabTrigger>#append</tabTrigger>
+	<description>append an asm file</description>
+</snippet>
