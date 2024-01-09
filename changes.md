@@ -45,3 +45,9 @@ if (...) {<br />
 ### Added float comparament to if
 if (_float_ qword \[a\] > _float_ qword \[b\] )<br />
 _float_ can also be used only for one of arguments
+
+## Updated examples\|base syntax.txt
+### Updated all examples
+Updated all files and added functions.lnasm
+### Updated base syntax.txt
+Updated base syntax.txt for new syntax
