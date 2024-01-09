@@ -1,5 +1,4 @@
 import re
-re._MAXCACHE = 3000
 from errors import *
 import os, sys, time
 
@@ -550,7 +549,6 @@ def _syntax_if(string, translator, line):
 
     z = 0
     for cond in blocks:
-        print(cond)
         z+=1
         c = _cond.match(cond)
         if not c:
@@ -573,7 +571,6 @@ def _syntax_if(string, translator, line):
             translator.write_to_text("fcomi st0, st1")
             translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{line}")
         else:
-            print(1)
             translator.write_to_text(f"cmp {a}, {b} ; {c}")
             translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{line}")
     
@@ -925,14 +922,15 @@ def split(text, char):
     for c, i in enumerate(text):
         if i == "\"":
             quotes = 0 if quotes else 1
-        elif i == "{" and not quotes:
-            brackets += 1
-        elif i == "}" and not quotes:
-            brackets -= 1
-        elif i == char and not quotes and not brackets:
-            matches.append(text[before+1:c])
-            before = c
-
+        elif not quotes:
+            if i == "{":
+                brackets += 1
+            elif i == "}":
+                brackets -= 1
+            elif i == char:
+                if not brackets:
+                    matches.append(text[before+1:c])
+                    before = c
     return matches
 
 def ToASM(lines, translator):

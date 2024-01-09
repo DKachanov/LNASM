@@ -10,11 +10,11 @@ const len = $ - b;
 ::_start;
     math.factorial(qword [a]);
 
-    if rax == 120: equal;
-    stdio.print(b, len);
-    jmp end;
-::equal;
-    stdio.print(b+4, len-4);
+    if (rax == 120) {
+        stdio.print(b+4, len-4);
+    } else {
+        stdio.print(b, len);
+    };
 
 ::end;
     stdf.exit(0);

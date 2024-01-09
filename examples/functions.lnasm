@@ -1,0 +1,22 @@
+
+
+function func1(qword arg1, qword arg2, ...) {
+	/*
+		This function construction expect a value in rax as a return;
+		All register (except rax) will be pushed, and rbp -> stack;
+	*/
+};
+
+void function func2(qword arg1, qword arg2) {
+	/*
+		This function construction do NOT expect a value in rax as a return;
+		All register will be pushed, and rbp -> stack;
+	*/
+};
+
+function func3(qword arg1, qword arg2) nosave {
+	/*
+		This function construction do NOT save any registers,
+		stack is not changed
+	*/
+};

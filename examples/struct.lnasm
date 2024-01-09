@@ -1,0 +1,17 @@
+#append NASMLibs/stdio64.asm;
+#append NASMLibs/stdf64.asm;
+#syntax PyLibs/struct.py;
+
+#global _start;
+
+::_start;
+
+    struct x = {
+        str    : db "test", 0;
+        length : dq $ - x.str;
+    };
+
+    stdio.print(x.str, qword [x.length]);
+
+::end;
+    stdf.exit(0);

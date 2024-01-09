@@ -9,11 +9,10 @@ const len = $ - c;
 
 ::_start;
 
-    if float qword [b] == qword [a]: equal;
-    stdio.print(c, len);
-    jmp end;
-::equal;
-    stdio.print(c+4, len-4);
-
+    if (float qword [b] == qword [a]) {
+        stdio.print(c+4, len-4);        
+    } else {
+        stdio.print(c, len);
+    };
 ::end;
     stdf.exit(0);
