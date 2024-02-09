@@ -13,7 +13,7 @@ const SA.len = 16;
     socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
     rax -> [fd];
     socket.connect(qword [fd], SA, SA.len);
-    socket.send(qword [fd], undefined "hello", 5);
+    socket.send(qword [fd], notdef "hello", 5);
     socket.close(qword [fd], socket.SHUT_RDWR);
 
 ::end;

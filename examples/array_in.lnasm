@@ -10,11 +10,11 @@ list byte x = [1, 2, 3, 4];
 
     array.in(x, qword [x.type], qword [x.len], 2);
     if (rbx == true) {
-        stdio.print(undefined "error\n", 6);
+        stdio.print(notdef "error\n", 6);
     } else if (rax == true) {
-        stdio.print(undefined "true\n", 5);
+        stdio.print(notdef "true\n", 5);
     } else {
-        stdio.print(undefined "false\n", 6);
+        stdio.print(notdef "false\n", 6);
     };
 
 ::end;

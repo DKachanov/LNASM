@@ -181,18 +181,18 @@ stringf.compare:
 
 .false:
     mov rax, 0
-    pop rdx
-    pop rcx
-    pop rsi
     pop rdi
+    pop rsi
+    pop rcx
+    pop rdx
     ret 24
 
 .true:
     mov rax, 1
-    pop rdx
-    pop rcx
-    pop rsi
     pop rdi
+    pop rsi
+    pop rcx
+    pop rdx
     ret 24
 
 ;;endfunc
@@ -580,3 +580,46 @@ stringf.StringToFloat:
         stringf.math.ipower.end:
                 ret 16
 
+;;endfunc
+
+stringf.findString:
+      ;stringf.findString(QWORD (string) where_str, QWORD (string) what_str, QWORD (int) len1, QWORD (int) len2) -> QWORD (int) [0,1]
+      push rbp
+      mov rbp, rsp
+      push rcx
+      push rsi
+      push rdi
+      %define  where_str qword [rbp+16]
+      %define  what_str qword [rbp+24]
+      %define  len1 qword [rbp+32]
+      %define  len2 qword [rbp+40]
+      mov rcx,    len1
+      mov rsi,    where_str
+      mov rdi,    what_str
+      _while:
+      push  len2
+      push  rdi
+      push rsi
+      call        stringf.compare
+      cmp   rax ,  true
+      je _if
+      jmp _if_end
+      _if:
+      jmp __functionstringf.findString_end
+      _if_end:
+      inc                     rsi
+      dec         rcx
+      cmp rcx ,  len2
+      jge _while
+      mov rax,    0
+      __functionstringf.findString_end:
+      %undef  where_str
+      %undef  what_str
+      %undef  len1
+      %undef  len2
+      pop rdi
+      pop rsi
+      pop rcx
+      mov rsp, rbp
+      pop rbp
+      ret 8*4

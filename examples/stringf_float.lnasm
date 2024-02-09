@@ -8,7 +8,7 @@
 
     RES byte result[30];
 
-    stdio.print(undefined "insert value\n", 13);
+    stdio.print(notdef "insert value\n", 13);
     stdio.input(result, 10);
     stringf.StringToFloat(result, rax); /* rax = float */
     stringf.FloatToString(rax, result+10); /* rax = length */

@@ -3,6 +3,6 @@
 #global _start;
 
 ::_start;
-    stdio.print(undefined "Hello, world!\n", 14);
+    stdio.print(notdef "Hello, world!\n", 14);
 
     stdf.exit(0);

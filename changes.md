@@ -1,53 +1,34 @@
 # Changes
-## New errors
-## fixed undefined strings
-## functions
-### function func(qword arg1, ...) {...}
-example:<br/>
-RES byte res\[20\];<br/><br />
-function inputNum() {<br />
-	stdio.input(res, 20);<br/>
-	stringf.StrToNum(res, rax);<br/>
-};
-### void function func(qword arg1, ...) {...}
-RES byte res\[20\];<br/><br />
-void function printNum(qword num) {<br/>
-    stringf.NumToStr(a, res);<br/>
-    stringf.len(res);<br/>
-    stdio.print(res, rax);<br/>
-};
-### function func(qword arg1, ...) nosave {...}
-nosave -> registers wont be pushed and poped<br />
-(registers' data will not be saved)
+## Fixed stringf.compare
+## Fixed **nosave** in function
+## New macros for int math
+### +=\|-=\|\*=\|/=\|//=\|%=
++=  add<br />
+-=  sub<br />
+\*=  mul<br />
+/= 	div (returns float)<br />
+//= div (returns int)<br />
+%=  div (returns remainder)<br /><br />
+Also, add *float* before value, to use float functions<br />
+Examples:<br />
+	dword \[a\] += dword \[b\] (returns int)<br />
+	float dword \[a\] -= dword \[b\] (returns float)
+<br />
+	dword \[a\] /= dword \[b\] (returns float)<br />
+	dword \[a\] //= dword \[b\] (returns int)<br />
+	dword \[a\] %= dword \[b\] (returns remainder)<br />
+**BUT**<br />
+Using floats with %= is forbidden
 
-### function ret
-qword \[a\] = test();<br />
-is the same as<br />
-test();<br />
-rax -> qword \[a\];<br />
-
-## data
-Now allowed to write qword a, b, c;<br />
-instead of qword a; qword b; qword c
-
-## syntax/snippets
-Added .sublime-syntax/.sublime-snippet for sublime text
-
-## new if
-if (...) {<br />
-    ...;<br />
-} else if (...) {<br />
-    ...;<br />
-} else {<br />
-    ...;<br />
-};<br />
-
-### Added float comparament to if
-if (_float_ qword \[a\] > _float_ qword \[b\] )<br />
-_float_ can also be used only for one of arguments
-
-## Updated examples\|base syntax.txt
-### Updated all examples
-Updated all files and added functions.lnasm
-### Updated base syntax.txt
-Updated base syntax.txt for new syntax
+## New function stringf.findString
+## New Checker for name in file
+It checks if variable's name is already used in file (or appended asm files)
+## undefined replaced with notdef
+keyword "undefined" replaced with keyword "notdef"
+### notdef arrays:
+undefined \[...\]<br />
+Can contain undefined strings BUT cannot contain other undefined arrays
+## BITS
+.lnasm: #BITS *64/32/16*;<br />
+-><br />
+.asm:   BITS *64/32/16*

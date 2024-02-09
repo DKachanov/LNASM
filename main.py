@@ -1,13 +1,5 @@
 import argparse
-from syntax import (
-    syntax,
-    syntax_nothing,
-    syntax_com,
-    syntax_not_defined_string,
-    rep_spec_chars,
-    syntax_split,
-    ToASM
-    )
+from syntax import syntax_com, ToASM
 from translator import Translator
 import os, time
 
@@ -20,9 +12,8 @@ args = parser.parse_args()
 
 name = args.name[::-1].split(".", 1)[1][::-1]
 
-lines = open(args.name, "r").read().replace("\n", "")
-comms = [x for x in syntax_com.finditer(lines)][::-1]
-for x in comms:
+lines = open(args.name, "r").read()
+for x in [x for x in syntax_com.finditer(lines)][::-1]:
     a, b = x.span()
     lines = lines[:a] + lines[b:]
 
@@ -79,8 +70,6 @@ translator.write_to_coms(f"""
 
 
 open(args.outfile, "w").write(translator.translate())
-
-
 print(f"Translate time: {round(time.time() - Start_time, 9)} seconds")
 
 if args.translateToElf64Program:

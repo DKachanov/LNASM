@@ -525,40 +525,83 @@ socket.recv:
 ;;endfunc
 
 socket.StrToAddr:
-      ;socket.StrToAddr(QWORD PTR (string) str, QWORD (int) length)
-      push rdx
-      push rsi
-      push rax
-      push rcx
-
-      mov rdx, [rsp+32] ; our string
-      mov rsi, [rsp+40]
-      xor rax, rax ; zero a "result so far"
-      .top:
-      movzx rcx, byte [rdx] ; get a character
-
-      inc rdx ; ready for next one
-
-      cmp rcx, '.'
-      je .done
-
-      cmp rcx, '0' ; valid?
-      jb .done
-      cmp rcx, '9'
-      ja .done
-
-      sub rcx, '0' ; "convert" character to number
-      imul rax, 10 ; multiply "result so far" by ten
-      add rax, rcx ; add in current digit
-
-      dec rsi
-      cmp rsi, 0
-      jz .done
-
-      jmp .top ; until done
-      .done:
-      pop rcx
-      pop rax
-      pop rsi
-      pop rcx
-      ret 16
+push rbp
+mov rbp, rsp
+__funcpushaq
+%define  String qword [rbp+16]
+%define  len qword [rbp+24]
+; [10]:     0 -> rcx
+mov rcx,    0
+; [11]:     0 -> rdi
+mov rdi,    0
+; [12]:     String -> rsi
+mov rsi,    String
+__whileConstruction13:
+cmp     byte [rsi] ,  "."  ;    byte [rsi] == "." 
+je _if_construction1_14
+cmp byte [rsi] ,  "0"  ; byte [rsi] < "0" 
+jl _if_construction2_14
+cmp byte [rsi] ,  "9"  ; byte [rsi] > "9" 
+jg _if_construction3_14
+; [15]:             10 -> bl
+mov bl,             10
+; [16]:             mul bl
+            mul bl
+; [17]:             add al, byte [rsi]
+            add al, byte [rsi]
+; [18]:             sub al, 30h
+            sub al, 30h
+jmp _if_construction14_end
+_if_construction1_14:
+; [19]:             push ax
+            push ax
+; [20]:             0 -> al
+mov al,             0
+; [21]:             rdi++
+inc             rdi
+jmp _if_construction14_end
+_if_construction2_14:
+; [22]:             -1 -> rax
+mov rax,            -1
+jmp __functionStrToAddr_end
+jmp _if_construction14_end
+_if_construction3_14:
+; [24]:             -1 -> rax
+mov rax,            -1
+jmp __functionStrToAddr_end
+jmp _if_construction14_end
+_if_construction14_end:
+; [26]:         rcx++
+inc         rcx
+; [27]:         rsi++
+inc         rsi
+cmp rcx ,  len
+jl __whileConstruction13
+; [28]:     0 -> rbx
+mov rbx,    0
+; [29]:     pop cx
+    pop cx
+; [30]:     pop dx
+    pop dx
+; [31]:     pop bx
+    pop bx
+; [32]:     rbx << 8
+shl     rbx ,  8
+; [33]:     dl -> bl
+mov bl,     dl
+; [34]:     rbx << 8
+shl     rbx ,  8
+; [35]:     cl -> bl
+mov bl,     cl
+; [36]:     rbx << 8
+shl     rbx ,  8
+; [37]:     al -> bl
+mov bl,     al
+jmp __functionStrToAddr_end
+__functionStrToAddr_end:
+%undef  String
+%undef  len
+__funcpopaq
+mov rsp, rbp
+pop rbp
+ret 8*2

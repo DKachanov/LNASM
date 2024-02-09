@@ -1,12 +1,12 @@
 import re
 from errors import *
-import os, sys, time
+import os, sys
 
 types = {
-    "byte" : "db",
-    "word" : "dw",
     "dword" : "dd",
-    "qword" : "dq"
+    "qword" : "dq",
+    "word" : "dw",
+    "byte" : "db"
 }
 
 rax_size = {
@@ -55,16 +55,26 @@ data_size = {
     "byte"  : 1
 }
 
+rdata_size = {
+    8 : "qword",
+    4 : "dword",
+    2 : "word",
+    1 : "byte"
+}
+
 #skips lines with no data
 syntax_nothing = re.compile(r"[ \t]+")
 syntax_split = re.compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^{]*\})")
+var_search = lambda name: re.compile(rf"[ \t]*({name}:.*|{name}[ \t]+(db|dw|dd|dq)[ \t]+.*)")
+func_search = lambda name: re.compile(rf"[ \t]*{name}:.*")
 
 #coms
 syntax_com = re.compile(r"/\*(.+?)(?=(\*/))\*/(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 syntax_comma = re.compile(r",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
 
 #not defined strings
-syntax_not_defined_string = re.compile(r'''("[^"]){0}undefined[ \t]+"[^"]*"''')
+syntax_not_defined_string = re.compile(r'''("[^"]){0}notdef[ \t]+"[^"]*"''')
+syntax_not_defined_array  = re.compile(r"(\[[^\]]){0}notdef[ \t]+\[[^\]]*\]")
 numbyte = re.compile(r'\\+x[0-9abcdef]{2}')
 spec_char = re.compile(r'\\+[n|t]')
 
@@ -82,7 +92,7 @@ syntax_const            = re.compile(r"[ \t]*const[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]
 syntax_push       = re.compile(r"[ \t]*push .+")
 syntax_pop        = re.compile(r"[ \t]*pop .+")
 syntax_pushpop_aq = re.compile(r"[ \t]*(pushaq|popaq)[ \t]*") 
-syntax_ret        = re.compile(r"[ \t]*ret([ \t]+[0-9]+[ \t]+){0,1}[ \t]*")
+syntax_ret        = re.compile(r"[ \t]*ret[ \t]+.+")
 syntax_jmp        = re.compile(r"[ \t]*jmp .+")
 syntax_call       = re.compile(r"[ \t]*call[ \t]+[a-z|A-Z|_][\.\w]*[ \t]*")
 syntax_int        = re.compile(r"[ \t]*int .+")
@@ -93,11 +103,11 @@ syntax_dec        = re.compile(r"[ \t]*.+\-\-[ \t]*")
 syntax_syscall    = re.compile(r"[ \t]*syscall( .+){0,1}[\t ]*")
 
 #macros
-syntax_func                = re.compile(r"[ \t]*(void[ \t]+){0,1}function[ \t]+[a-z|A-Z|_][\.\w]*\((.*\,[ ]*)*.*\)[ \t]+(nosave[ \t]+){0,1}")
+syntax_func                = re.compile(r"[ \t]*(void[ \t]+){0,1}function[ \t]+[a-z|A-Z|_][\.\w]*\((.*\,[ ]*)*.*\)[ \t]+(nosave[ \t]+){0,1}[ \t]*")
 syntax_global              = re.compile(r"[ \t]*#global [a-z|A-Z|_][\.\w]*.*")
 syntax_append              = re.compile(r"[ \t]*#append .*")
 syntax_syntax              = re.compile(r"[ \t]*#syntax .*")
-syntax_if                  = re.compile(r"[ \t]*if (.+[ \t]+(==|!=|>|<|>=|<=)[ \t]+.+)[ \t]+")
+syntax_if                  = re.compile(r"[ \t]*if[ \t]*\(.+[ \t]+(==|!=|>|<|>=|<=)[ \t]+.+\)[ \t]+")
 syntax_call_with_args      = re.compile(r"[ \t]*[a-z|A-Z|_][\w|\.]*\(.*\)[ \t]*")
 syntax_call_with_args_rets = re.compile(r"[ \t]*.*[ \t]+=[ \t]+[a-z|A-Z|_][\w|\.]*\(.*\)[ \t]*")
 syntax_asm                 = re.compile(r"[ \t]*#asm[ \t]+\.(text|data|bss) \{[^\}]+\}[ \t]*")
@@ -108,13 +118,20 @@ syntax_undef               = re.compile(r"[ \t]*#undefine[ \t]+[a-z|A-Z|_][\.\w]
 syntax_from                = re.compile(r"[ \t]*#from[ \t]+\"[^\"]+\"[ \t]+append[ \t]+\"[^\"]+\"[ \t]*")
 syntax_head                = re.compile(r'[ \t]*#head[ \t]+.+[ \t]*')
 syntax_while               = re.compile(r'[ \t]*while(.*)')
+syntax_return              = re.compile(r'[ \t]*return[ \t]*')
+syntax_bits                = re.compile(r'[ \t]*#BITS[ \t]+(16|32|64)[ \t]*')
 
 #imath
-syntax_add   = re.compile(r"[ \t]*add .*, .*")
-syntax_sub   = re.compile(r"[ \t]*sub .*, .*")
-syntax_div   = re.compile(r"[ \t]*div .*")
-syntax_mul   = re.compile(r"[ \t]*mul .*")
-syntax_shift = re.compile(r"[ \t]*.* (<<|>>) .*")
+syntax_add        = re.compile(r"[ \t]*.*\+=.*")
+syntax_sub        = re.compile(r"[ \t]*.*-=.*")
+syntax_macro_div  = re.compile(r"[ \t]*.*/=.*")
+syntax_macro_idiv = re.compile(r"[ \t]*.*//=.*")
+syntax_macro_rem  = re.compile(r"[ \t]*.*%=.*")
+syntax_macro_mul  = re.compile(r"[ \t]*.*\*=.*")
+syntax_div        = re.compile(r"[ \t]*div .*")
+syntax_mul        = re.compile(r"[ \t]*mul .*")
+
+syntax_shift     = re.compile(r"[ \t]*.* (<<|>>) .*")
 
 #fmath
 syntax_fadd         = re.compile(r"[ \t]*fadd .*, .*, .*")
@@ -131,8 +148,11 @@ reg_list = ['rax', 'rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9']
 _else  = re.compile(r"\belse\b")
 _float = re.compile(r"\bfloat\b")
 _cond  = re.compile(r"(.+)")
-_comb  = re.compile(r"(==|!=|>|<|>=|<=)")
+_comb  = re.compile(r"(==|!=|>=|<=|>|<)")
 _regs  = re.compile(r"\b(rbp|ebp|bp|es|fs|gs|ss|rax|eax|rbx|ebx|rcx|ecx|rdx|edx|rsp|esp|sp|rsi|esi|si|rdi|edi|di|(a|b|c|d)(x|h|l))\b")
+#imath
+ops = re.compile(r"(\+=|-=|\*=|/=|//=|%=)")
+dsize = re.compile(r"(byte|word|dword|qword)")
 #data func
 def _syntax_int_data(string, translator, c):
     """
@@ -146,6 +166,9 @@ def _syntax_int_data(string, translator, c):
 
     var, value = string.split("=")
     type, var = var.split()[:2]
+
+    translator.check_name("".join(var.split()))
+    translator.vars.append("".join(var.split()))
 
     translator.write_to_data(f"{var} {types[type]} {value}")
 
@@ -163,6 +186,9 @@ def _syntax_int_data_no_args(string, translator, c):
     type = find.search(string).group().split()[0]
     vars = string.split(type)[1].split(",")
     for var in vars:
+        translator.check_name("".join(var.split()))
+        translator.vars.append("".join(var.split()))
+
         translator.write_to_data(f"{var} {types[type]} 0")
 
 
@@ -181,6 +207,10 @@ def _syntax_res_int_data(string, translator, c):
     type, name_value = string.split()[1:]
     name, value = name_value.split("[")
     value = value[:len(value)-1]
+
+    translator.check_name("".join(name.split()))
+    translator.vars.append("".join(name.split()))
+    
     translator.write_to_data(f"{name}: TIMES {value} d{types[type][1]} 0")
 
 
@@ -198,7 +228,11 @@ def _syntax_string(string, translator, c):
     
     value = rep_spec_chars(value)
 
+    translator.check_name("".join(var.split()))
+    translator.vars.append("".join(var.split()))
+
     translator.write_to_data(f"{var} db {value}")
+    translator.write_to_data(f"{''.join(var.split())}.len equ $ - {var}")
 
 def _syntax_const(string, translator, c):
     """
@@ -210,6 +244,10 @@ def _syntax_const(string, translator, c):
 
     var, value = string.split("=", 1)
     var = var.replace("const ", "")
+
+    translator.vars.append("".join(var.split()))
+    translator.check_name("".join(var.split()))
+
     translator.write_to_data(f"{var} equ {value}")
 
 def _syntax_float(string, translator, c):
@@ -226,6 +264,9 @@ def _syntax_float(string, translator, c):
     name = string.split("float ")[1].split()[1]
     value = string.split("=")[1]
     
+    translator.check_name("".join(name.split()))
+    translator.vars.append("".join(name.split()))
+
     translator.write_to_data(f"{name} {data} {value}")
 
 
@@ -256,6 +297,9 @@ def _syntax_list(string, translator, c):
 
     data = data[1:].split("]", 1)[0]
     data_len = len(data.split(','))
+
+    translator.check_name("".join(name.split()))
+    translator.vars.append("".join(name.split()))
 
     translator.write_to_data(f"{name} {type} {data}")
     translator.write_to_data(f"{name}.len dq {data_len}")
@@ -324,6 +368,14 @@ def _syntax_pushpop_aq(string, translator, c):
         translator.write_to_text("popaq")
 #macros func
 
+def _syntax_bits(string, translator, c):
+    bits = int("".join(string.split("#BITS", 1)[1].split()))
+    if translator.set_bits != bits and translator.set_bits:
+        fileFormatError(c, f"Cannot reset file bit format to other ({translator.set_bits} to {bits})")
+    
+    translator.coms += string.replace("#", "")
+    translator.set_bits = bits
+
 def _syntax_call_with_args_rets(string, translator, c):
     """
     qword [a] = func(...) -> func(...) + rax -> qword [a]
@@ -345,6 +397,14 @@ def _syntax_call_with_args_rets(string, translator, c):
         translator.write_to_text(f"mov {place}, rax")
     else:
         translator.write_to_text(f"mov {place}, {rax_size[size]}")
+
+
+def _s_return(name):
+    def f(string, translator, c):
+        translator.write_to_text(f"jmp __function{name}_end")
+
+    return f
+
 def _syntax_func(string, translator, c):
     """
     function func1(qword a, qword b, qword c) {
@@ -361,15 +421,14 @@ def _syntax_func(string, translator, c):
     nosave = False
 
 
-    if not "nosave" in head.split("{", 1)[0]:
+    if "nosave" in string.split("{", 1)[0].split(")", 1)[1]:
+        nosave = True
+    else:
         if "void" in string.split("function", 1)[0]:
-
             translator.write_to_text(f"pushaq")
             void = True
         else:
             translator.write_to_text(f"__funcpushaq")
-    else:
-        nosave = True
 
     c = 8
     names = []
@@ -388,8 +447,9 @@ def _syntax_func(string, translator, c):
                 else:
                     dataSizeError(c, "Unknown data size")
     lines = re.compile(r"\)[ \t]+(nosave[ \t]+){0,1}\{").split(string, maxsplit=1)[::-1][0][::-1].split("}", maxsplit=1)[1][::-1]
+    syntax.update({syntax_return : _s_return(name)})
     ToASM(lines, translator)
-
+    translator.write_to_text(f"__function{name}_end:")
 
     for n in names:
         translator.write_to_text(f"%undef {n}")
@@ -459,7 +519,7 @@ def _syntax_syntax(string, translator, c):
     elif os.path.isfile(os.path.join(sys.path[0], file)):
         data = open(os.path.join(sys.path[0], file)).read()
     else:
-        fileNotFound("No such file as \"{string.split('#syntax ')[1]}\"")
+        fileNotFound(f"No such file as \"{string.split('#syntax ')[1]}\"")
     
     exec(data)
 
@@ -509,13 +569,14 @@ def _syntax_asm(string, translator, c):
 
     for line in syntax_split.split(code.replace("{", "").replace("}", "")):
         call(line)
+        translator.c += 1
 
 def _clean_asm_text(string, translator, c):
     """
         writes raw asm string in text section
     """
     translator.write_to_text(f"; [{c}]: {string}")
-    
+
     translator.write_to_text(string)
 
 
@@ -531,6 +592,7 @@ def _syntax_if(string, translator, line):
             ...;
         };
     """
+    translator.cc += 1
     l = 0
     blocks = []
     for x in _else.finditer(string):
@@ -550,6 +612,11 @@ def _syntax_if(string, translator, line):
     z = 0
     for cond in blocks:
         z+=1
+
+        '''
+        AND & OR
+        '''
+
         c = _cond.match(cond)
         if not c:
             syntaxError(line, f"Invalid format {c}")
@@ -569,23 +636,23 @@ def _syntax_if(string, translator, line):
             translator.write_to_text(f"fld {b.split('float', 1)[1]}" if f[1] else f"fild {b}")
             translator.write_to_text(f"fld {a.split('float', 1)[1]}" if f[0] else f"fild {a}")
             translator.write_to_text("fcomi st0, st1")
-            translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{line}")
+            translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{translator.cc}")
         else:
             translator.write_to_text(f"cmp {a}, {b} ; {c}")
-            translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{line}")
+            translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{translator.cc}")
     
     if not noelse:
         ToASM(_else_block.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
-    translator.write_to_text(f"jmp _if_construction{line}_end")
+    translator.write_to_text(f"jmp _if_construction{translator.cc}_end")
 
     z = 0
     for cond in blocks:
         z+=1
-        translator.write_to_text(f"_if_construction{z}_{line}:")
+        translator.write_to_text(f"_if_construction{z}_{translator.cc}:")
         ToASM(cond.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
-        translator.write_to_text(f"jmp _if_construction{line}_end")
+        translator.write_to_text(f"jmp _if_construction{translator.cc}_end")
 
-    translator.write_to_text(f"_if_construction{line}_end:")
+    translator.write_to_text(f"_if_construction{translator.cc}_end:")
 
 
 
@@ -669,12 +736,13 @@ def _syntax_while(string, translator, c):
         ...;
     }
     """
+    translator.cc += 1
     always_true = False
-    name = f".__whileConstruction{c}"
+    name = f"__whileConstruction{translator.cc}"
     print(f"While start (for while in line {c})")
-    condition = re.compile(r"\)[ \t]*\{").split(string)[0].split("while(")[1]
+    condition = re.compile(r"\)[ \t]*\{").split(string)[0].split("while")[1].replace("(", "", 1)
     if not re.compile(r"[ \t]*true[ \t]*").fullmatch(condition):
-        search = re.compile(r"(==|!=|>|<|>=|<=)").search(condition)
+        search = _comb.search(condition)
 
         if search == None:
             expressionError(c, f"There is an error in condition \"{condition}\"")
@@ -691,13 +759,188 @@ def _syntax_while(string, translator, c):
     ToASM(lines, translator)
 
     if always_true:
-        translator.write_to_text(f"jmp .__whileConstruction{c}")    
+        translator.write_to_text(f"jmp __whileConstruction{translator.cc}")    
     else:
-        translator.write_to_text(f"cmp {fir}, {sec}\n{jmp} .__whileConstruction{c}")
+        translator.write_to_text(f"cmp {fir}, {sec}\n{jmp} __whileConstruction{translator.cc}")
     print(f"While end (for while in line {c})")
 
 
-#math fun
+#math func
+
+def _syntax_imath(string, translator, c):
+    """
+
++=|-=|*=|/=|//=|%=
++=  add<br />
+-=  sub<br />
+*=  mul<br />
+/=  div (returns float)<br />
+//= div (returns int)<br />
+%=  div (returns remainder)<br /><br />
+Also, add *float* before value, to use float functions<br />
+Examples:<br />
+    dword [a] += dword [b] (returns int)<br />
+    float dword [a] -= dword [b] (returns float)
+<br />
+    dword [a] /= dword [b] (returns float)<br />
+    dword [a] //= dword [b] (returns int)<br />
+    dword [a] %= dword [b] (returns remainder)<br />
+**BUT**<br />
+Using floats with %= is forbidden
+
+    """
+    _float = re.compile(r'\bfloat\b')
+    translator.write_to_text(f"; [{c}]: {string}")
+
+    a, op, b = ops.split(string, 1)
+    A, B = _float.search(a), _float.search(b)
+    _float = A or B
+    a = a.replace("float", "", 1)
+    b = b.replace("float", "", 1)
+
+    x = [z.group() for z in dsize.finditer(string)]
+
+    regx = rax_size[x[0]]
+    regy = rax_size[x[0]].replace('a', 'b') if len(x) == 1 else rax_size[x[1]].replace('a', 'b')
+
+
+    if translator.set_bits == 0:
+        d, e = data_size[x[0]]*8 > translator.set_bits, data_size[x[1]]*8 > translator.set_bits
+        if d or e:
+            dataSizeError(c, f"{x[0] if d else x[1]} is too big for {translator.set_bits}-bits registers", f"#BITS {translator.set_bits} has been used")
+        
+        _pa = "rax"
+        _pb = "rbx"
+        _pd = "rdx"
+    else:
+        _pa = rax_size[rdata_size[translator.set_bits/8]]
+        _pb = _pa.replace("a", "b")
+        _pd = _pa.replace("a", "d")
+
+
+    if op == "+=":
+        if _float:
+            if A:
+                translator.write_to_text(f"fld {a}")
+            else:
+                translator.write_to_text(f"fild {a}")
+
+            if B:
+                translator.write_to_text(f"fld {b}")
+            else:
+                translator.write_to_text(f"fild {b}")
+
+            translator.write_to_text(f"fadd\nfstp "+ a)
+
+        else:
+            if len(x) > 1:
+                translator.write_to_text(f"""
+    push {_pa}")
+    mov {regx}, {b}
+    add {a}, {regx}
+    pop {_pa}""")
+
+            else:
+                translator.write_to_text(f"add {a}, {b}")
+
+    elif op == "-=":
+        if _float:
+            if A:
+                translator.write_to_text(f"fld {a}")
+            else:
+                translator.write_to_text(f"fild {a}")
+
+            if B:
+                translator.write_to_text(f"fld {b}")
+            else:
+                translator.write_to_text(f"fild {b}")
+
+            translator.write_to_text(f"fsub\nfstp " + a)
+
+        else:
+            if len(x) > 1:
+                translator.write_to_text(f"""
+    push {_pa}")
+    mov {regx}, {b}")
+    sub {a}, {regx}")
+    pop {_pa}""")
+
+            else:
+                translator.write_to_text(f"sub {a}, {b}")
+
+    elif op == "*=":
+        if not _float:
+            
+            translator.write_to_text(f"""
+    push {_pa}
+    push {_pb}
+    push {_pd}
+    mov {_pa}, 0
+    mov {_pb}, 0
+    mov {_pd}, 0
+    mov {regx}, {a}
+    mov {regy}, {b}
+    mul {_pb}
+    mov {a}, {regx}
+    pop {_pd}
+    pop {_pb}
+    pop {_pa}""")
+        else:
+            translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+            translator.write_to_text(f"fld {b}" if B else f"fild {b}")
+
+            translator.write_to_text(f"fmul\nfstp " + a)
+
+    elif op == "//=":
+        if not _float:
+            translator.write_to_text(f"""
+    push {_pa}
+    push {_pb}
+    push {_pd}
+    mov {_pa}, 0
+    mov {_pb}, 0
+    mov {_pd}, 0
+    mov {regx}, {a}
+    mov {regy}, {b}
+    div {_pb}
+    mov {a}, {regx}
+    pop {_pd}
+    pop {_pb}
+    pop {_pa}""")
+
+        else:
+            translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+            translator.write_to_text(f"fld {b}" if B else f"fild {b}")
+            
+            translator.write_to_text(f"fdiv\nfistp " + a)
+
+    elif op == "%=":
+        if not _float:
+            translator.write_to_text(f"""
+    push {_pa}
+    push {_pb}
+    push {_pd}
+    mov {_pa}, 0
+    mov {_pb}, 0
+    mov {_pd}, 0
+    mov {regx}, {a}
+    mov {regy}, {b}
+    div {_pb}
+    mov {a}, {regx.replace('a', 'd')}
+    pop {_pd}
+    pop {_pb}
+    pop {_pa}""")
+        else:
+            syntaxError(c, "Cannot use float operand to get remainder (use fti if it's required)")
+
+    elif op == "/=":
+
+        translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+        translator.write_to_text(f"fld {b}" if B else f"fild {b}")
+        
+        translator.write_to_text(f"fdiv\nfstp " + a)
+
+
 
 def _syntax_shift(string, translator, c):
     """
@@ -834,7 +1077,6 @@ def _syntax_float_to_int(string, translator, c):
     translator.write_to_text(f"fistp {dest}")
 
 
-
 syntax = {
     #data
     syntax_int_data         : _syntax_int_data,
@@ -857,7 +1099,7 @@ syntax = {
     syntax_def                  : _syntax_defundef,
     syntax_from                 : _syntax_from,
     syntax_head                 : _syntax_head,
-
+    syntax_bits                 : _syntax_bits,
 
     #instructions
     syntax_mov        : _syntax_mov,
@@ -872,13 +1114,17 @@ syntax = {
     syntax_pushpop_aq : _syntax_pushpop_aq,
     
     #math
-    syntax_add   : _clean_asm_text,
-    syntax_sub   : _clean_asm_text,
-    syntax_div   : _clean_asm_text,
-    syntax_mul   : _clean_asm_text,
-    syntax_inc   : _syntax_incdec,
-    syntax_dec   : _syntax_incdec,
-    syntax_shift : _syntax_shift,
+    syntax_add        : _syntax_imath,
+    syntax_sub        : _syntax_imath,
+    syntax_macro_idiv : _syntax_imath,
+    syntax_macro_div  : _syntax_imath,
+    syntax_macro_rem  : _syntax_imath,
+    syntax_macro_mul  : _syntax_imath,
+    syntax_div        : _clean_asm_text,
+    syntax_mul        : _clean_asm_text,
+    syntax_inc        : _syntax_incdec,
+    syntax_dec        : _syntax_incdec,
+    syntax_shift      : _syntax_shift,
 
     #fmath
     syntax_float_to_int : _syntax_float_to_int,
@@ -933,10 +1179,12 @@ def split(text, char):
                     before = c
     return matches
 
-def ToASM(lines, translator):
+def ToASM(lines, translator, _syntax=syntax):
+    
+    _lines = lines.split("\n")
 
-    for line in split(lines, ";"):
-        translator.c += 1 #line counter
+    for line in split(lines.replace("\n", ""), ";"):
+        translator.c += 1
 
 
         if syntax_nothing.fullmatch(line) or line == "":
@@ -952,30 +1200,57 @@ def ToASM(lines, translator):
                 res = g
                 replaced = False
 
-                rep = f"__undefined_string.n{translator.undefined_c}"
+                rep = f"__notdef_string.n{translator.notdef_c}"
 
 
                 g = rep_spec_chars(g)
 
                 for l in translator.data.split("\n"):
-                    if "__undefined_string" == l[:18]:
-                        if f" db {g.replace('undefined', '')}, 0" == l.split(":")[1]:
+                    if "__notdef_string" == l[:15]:
+                        if f" db {g.replace('notdef', '')}, 0" == l.split(":")[1]:
                             line = line.replace(res, l.split(":")[0])
                             replaced = True
 
                 if not replaced:
                     line = line.replace(res, rep)
 
-                    translator.write_to_data(f"; [{translator.c}]: undefined string\n__undefined_string.n{translator.undefined_c}: db {g.replace('undefined', '')}, 0")
+                    translator.write_to_data(f"; [{translator.c}]: notdef string\n__notdef_string.n{translator.notdef_c}: db {g.replace('notdef', '')}, 0")
 
 
-                translator.undefined_c += 1
+                translator.notdef_c += 1
 
+        if syntax_not_defined_array.search(line):
+            for i in syntax_not_defined_array.finditer(line):
+                g = i.group()
+                res = g
+                replaced = False
+
+                rep = f"__notdef_array.n{translator.notdef_c}"
+                array = g.split("notdef", 1)[1].split("[")[1].split("]")[0].split(",")
+
+
+                e = True
+                translator.write_to_data(f"; [{translator.c}]: notdef array\n{rep}:")
+                for a in array:
+                    for t in types.keys():
+                        if t in a:
+                            translator.write_to_data(f"    {types[t]} {a.replace(t, '', 1)}")
+                            e = False
+                            break
+                    if e:
+                        if "__notdef_string.n" in a:
+                            translator.write_to_data(f"    dq {a.replace(t, '', 1)}")
+                        else:
+                            valueError(translator.c, "No size specified")
+                    e = True
+
+                line = line.replace(res, rep)
+                translator.notdef_c += 1
 
         not_matched = True
 
         if "if" in line and "{" in line:
-            if syntax_if.fullmatch(line.split("{")[0]):
+            if syntax_if.match(line.split("{")[0]):
                 _syntax_if(line, translator, translator.c)
                 not_matched = False
 
@@ -988,10 +1263,11 @@ def ToASM(lines, translator):
             if syntax_func.match(line.split("{")[0]):
                 _syntax_func(line, translator, translator.c)
                 not_matched = False
+
         if not_matched:
-            for s in syntax.keys():
+            for s in _syntax.keys():
                 if s.match(line):
-                    syntax[s](line, translator, translator.c)
+                    _syntax[s](line, translator, translator.c)
                     not_matched = False
                     
                     break
@@ -1000,3 +1276,5 @@ def ToASM(lines, translator):
             #if line does not fullmatch any syntax pattern
             #it shows error
             syntaxError(translator.c, f"Syntax error in line", line)
+
+        translator.check_all_names()

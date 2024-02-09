@@ -13,7 +13,7 @@ const mode = 666o;
 
     qword fd;
 
-    file.open(undefined "test.txt", mode);
+    file.open(notdef "test.txt", mode);
     rax -> [fd];
     file.write(qword [fd], data, data.len);
     file.close(qword [fd]);

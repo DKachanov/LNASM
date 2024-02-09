@@ -11,7 +11,7 @@ const SA.len = 16;
 ::_start;
     socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0);
     rax -> [fd];
-    socket.sendto(qword [fd], undefined "hello", 5, SA, SA.len, 0);
+    socket.sendto(qword [fd], notdef "hello", 5, SA, SA.len, 0);
     socket.close(qword [fd]);
 ::end;
     stdf.exit(0);

@@ -11,7 +11,7 @@ const mode = 666o;
     RES byte buffer[255];
     qword fd;
 
-    file.open(undefined "test.txt", mode);
+    file.open(notdef "test.txt", mode);
     rax -> [fd];
     file.read(qword [fd], buffer, 255);
     stringf.len(buffer);

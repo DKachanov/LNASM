@@ -16,24 +16,33 @@ stdf.exit:
 ;;endfunc
 
 stdf.exec:
-	;stdf.exec(QWORD PTR (string) filename, QWORD PTR (QWORD array) args)
+	;stdf.exec(QWORD PTR (string) filename, QWORD PTR (QWORD array) args, QWORD PTR (QWORD array) envp, QWORD (int))
 
     push rdx
     push rsi
     push rdi
-    push rax
+
+    mov rax, 56
+    syscall
+    cmp rax, 0
+    jnz .parent
 
 	mov rax, 59
-	mov rdi, [rsp+8]
-	mov rsi, [rsp+16]
-	mov rdx, 0
+	mov rdi, [rsp+32]
+	mov rsi, [rsp+40]
+	mov rdx, [rsp+48]
+	syscall
 
+	.parent:
+	push 0
+	mov rdi, rsp
+	mov rdx, 0
+	pop rax
+	syscall
     pop rdx
     pop rsi
     pop rdi
-    pop rax
 	
-	syscall
 
 	ret 16
 
@@ -66,6 +75,8 @@ stdf.allocate_mem:
 		mov rbx, 1
 		pop rdi
 		ret 8
+
+;;endfunc
 
 stdf.signal:
 	; stdf.signal(QWORD (int) signal, QWORD (addr) function) -> QWORD (int) error

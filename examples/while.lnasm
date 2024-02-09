@@ -6,14 +6,14 @@
     example for forever loop:
 
     while(true) {
-        stdio.print(undefined "Hello, world!\n", 14);
+        stdio.print(notdef "Hello, world!\n", 14);
     };
     
     */
     qword a;
 
     while(qword [a] < 3) {
-        stdio.print(undefined "test\n", 5);
+        stdio.print(notdef "test\n", 5);
         qword [a]++;
     };
 

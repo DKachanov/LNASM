@@ -9,7 +9,7 @@ byte version = __version__;
 ::_start;
     stringf.len(file);
     stdio.print(file, rax);
-    stdio.print(undefined "\n", 1);
+    stdio.print(notdef "\n", 1);
     stdio.print(version, 6);
 
 ::end;

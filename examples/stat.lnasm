@@ -15,7 +15,7 @@ RES byte T[21];
 
     statbuf stat;
 
-    file.stat(undefined "data.txt", stat);
+    file.stat(notdef "data.txt", stat);
     stringf.NumToStr(qword [stat.size], T);
     stringf.len(T);
     stdio.print(T, rax);

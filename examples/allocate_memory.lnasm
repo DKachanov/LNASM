@@ -9,9 +9,9 @@
     if (rbx == 0) {
         dword 825373492 -> [rax]; /* string 1234 */
         stdio.print(rax, 4);
-        stdio.print(undefined "\nMemory allocated succesfuly", 28);
+        stdio.print(notdef "\nMemory allocated succesfuly", 28);
     } else {
-        stdio.print(undefined "failed to allocate memory", 25);
+        stdio.print(notdef "failed to allocate memory", 25);
     };
 ::end;
     stdf.exit(0);

@@ -42,7 +42,7 @@
     socket.bind(qword [sock], Server, Server.len);
     socket.listen(qword [sock], 1);
 
-    stdio.print(undefined "Listening on port 8080...\n", 26);
+    stdio.print(notdef "Listening on port 8080...\n", 26);
 
     /* creating socket */
 
@@ -55,7 +55,7 @@
     socket.close(qword [conn], socket.SHUT_RDWR); /* closing connection */
     jmp .loop;
 ::end;
-    stdio.print(undefined "\nShutting down the server...\n", 29);
+    stdio.print(notdef "\nShutting down the server...\n", 29);
     socket.close(qword [sock], socket.SHUT_RDWR);
     stdf.exit(0);
 
@@ -92,18 +92,18 @@ void function handler() nosave {
     stdio.print(qword [handler.pointer], rax);
 
     /* routes: */
-    stringf.compare(qword [handler.pointer], undefined "/ ", 2);
+    stringf.compare(qword [handler.pointer], notdef "/ ", 2);
     if (rax == true) {
-            open(undefined "index.html");
+            open(notdef "index.html");
             socket.send(qword [conn], consts.http200, consts.http200Len);
             socket.send(qword [conn], qword [filebuff], qword [stat.size]);
 
             jmp handler.e200;
     };
 
-    stringf.compare(qword [handler.pointer], undefined "/test ", 6);
+    stringf.compare(qword [handler.pointer], notdef "/test ", 6);
     if (rax == true) {
-            open(undefined "test.html");
+            open(notdef "test.html");
 
             socket.send(qword [conn], consts.http200, consts.http200Len);
             socket.send(qword [conn], qword [filebuff], qword [stat.size]);
@@ -114,15 +114,15 @@ void function handler() nosave {
     jmp handler.e404;
 
     ::handler.e200;
-        stdio.print(undefined " - 200\n", 7);
+        stdio.print(notdef " - 200\n", 7);
         jmp handler.end;
 
 
     ::handler.e404;
-        open(undefined "p404.html");
+        open(notdef "p404.html");
         socket.send(qword [conn], consts.http404, consts.http404Len);
         socket.send(qword [conn], qword [filebuff], qword [stat.size]);
-        stdio.print(undefined " - 404\n", 7);
+        stdio.print(notdef " - 404\n", 7);
 
     ::handler.end;
 };
@@ -147,6 +147,6 @@ void function handler() nosave {
         pop rbp;
         ret;
     } else {
-        stdio.print(undefined "Failed to allocate memory", 25);
+        stdio.print(notdef "Failed to allocate memory", 25);
         syscall 60, 0;
     };
