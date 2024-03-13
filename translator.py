@@ -20,6 +20,7 @@ class Translator:
         self.set_bits = 0
         self.c = 0
         self.cc = 0
+        self.print_lines = False
 
     def write_to_data(self, string):
         #writes string to data section

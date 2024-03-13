@@ -4,9 +4,11 @@ datatypes:
 	dword (int)
 	qword (long)
 	string (char)
-	float (float)
+	float (32-bit float)
+	double (64-bit float)
+	extended (80-bit float)
 	list (all int types)
-	notdefined "..." -> creates an undefined string
+	notdef "..." -> creates an undefined string
 
 examples:
 	byte a = "\n"
@@ -22,7 +24,7 @@ examples:
 			word = 1
 			dword = 2
 			qword = 3
-	stdio.print(undefined "Hello, world!\n", 14)
+	stdio.print(notdef "Hello, world!\n", 14)
 	etc.
 
 constants:

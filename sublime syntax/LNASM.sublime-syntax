@@ -30,7 +30,7 @@ contexts:
     - match: '\.(text|data|bss)'
       scope: entity.name.space
 
-    - match: '\b(RLe|d(b|w|d|q)|matrix(8|16|32|64)|statbuf|socketAddr|void|struct|notdef|__float16__|__float32__|__float64__|float|list|int|RES|TIMES|string|byte|word|dword|qword)\b'
+    - match: '\b(RLe|d(b|w|d|q)|matrix(8|16|32|64)|statbuf|socketAddr|void|struct|notdef|__float16__|__float32__|__float64__|float|double|extended|list|int|RES|TIMES|string|byte|word|dword|qword|tword)\b'
       scope: storage.type
 
     - match: 'function'
@@ -41,7 +41,7 @@ contexts:
     # strings in YAML. When using single quoted strings, only single quotes
     # need to be escaped: this is done by using two single quotes next to each
     # other.
-    - match: '\b(return|nosave|if|else|for|while|fsqrt|fsin|fcos|ftan)\b'
+    - match: '\b(return|nosave|if|else|for|while|fsqrt|fsin|fcos|ftan|convto)\b'
       scope: keyword.control.example-c
 
 

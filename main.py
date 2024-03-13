@@ -7,19 +7,17 @@ import os, time
 parser = argparse.ArgumentParser(description='')
 parser.add_argument("--name", type=str, required=True, help="input file")
 parser.add_argument("--outfile", type=str, required=True, help="output file")
-parser.add_argument("--translateToElf64Program", required=False, help="use nasm -f elf64 -o *.asm *.o | ld *.o -o *")
+parser.add_argument("--print-lines", action='store_const', const=True, default=False, required=False, help="print all lines\n(help with debug)")
+parser.add_argument("--translateToElf64Program", action='store_const', const=True, default= False, required=False, help="use nasm -f elf64 -o *.asm *.o | ld *.o -o *")
 args = parser.parse_args()
-
 name = args.name[::-1].split(".", 1)[1][::-1]
 
 lines = open(args.name, "r").read()
-for x in [x for x in syntax_com.finditer(lines)][::-1]:
-    a, b = x.span()
-    lines = lines[:a] + lines[b:]
 
 
 Start_time = time.time()
 translator = Translator()
+translator.print_lines = args.print_lines
 
 translator.lines_len = len(str(len(lines)))
 undefined_c = 0
@@ -66,6 +64,9 @@ translator.write_to_coms(f"""
     pop rcx
     pop rbx
 %endmacro
+
+section .data
+    __used_for_nums dq 0
 """)
 
 

@@ -98,13 +98,12 @@ stringf.NumToStr:
       ;stringf.NumToStr(QWORD (int) number, QWORD PTR (string) string) -> QWORD (int) result
       ;write value in QWORD PTR string
 
-      push rax
       push rbx
       push rcx
       push rdx
       push rdi
-      mov rax, qword [rsp+48] ; QWORD (int) number
-      mov rbx, qword [rsp+56] ; QWORD PTR (str) String
+      mov rax, qword [rsp+40] ; QWORD (int) number
+      mov rbx, qword [rsp+48] ; QWORD PTR (str) String
       mov rcx, 0x7fffffffffffffff
       cmp rax, rcx
       jl .c
@@ -151,6 +150,8 @@ stringf.NumToStr:
             jmp .loop2
 
 .ret:
+    mov rax, 0
+    mov al, byte [stringf.counter]
     mov qword [stringf.string], 0
     mov qword [stringf.length], 0
     mov qword [stringf.counter], 0
@@ -158,7 +159,6 @@ stringf.NumToStr:
     pop rdx
     pop rcx
     pop rbx
-    pop rax
     ret 16
 
 ;;endfunc
@@ -453,6 +453,7 @@ stringf.FloatToString:
       push rax
       call stringf.NumToStr
 
+      add rdi, rax
       mov byte [rdi], "."
       inc rdi
 

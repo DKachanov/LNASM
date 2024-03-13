@@ -113,9 +113,10 @@ section .data
 
     socket.ADDR_REUSE equ 2
 
+section .text
+
 ;;required
 
-section .text
 
 socket.socket:
     ; socket.socket(QWORD (int) family, QWORD (int) type, QWORD (int) protocol) -> QWORD (fd) socket

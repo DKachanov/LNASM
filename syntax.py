@@ -1,10 +1,15 @@
-import re
+import re, struct
 from errors import *
 import os, sys
 
 types = {
+    "float" : "dd",
+    "double" : "dq",
+    "extended" : "dt",
+
     "dword" : "dd",
     "qword" : "dq",
+    "tword" : "dt",
     "word" : "dw",
     "byte" : "db"
 }
@@ -29,10 +34,10 @@ conditions = {
 fconditions = {
     "==" : "je",
     "!=" : "jne",
-    ">=" : "jae",
-    "<=" : "jbe",
-    ">"  : "ja",
-    "<"  : "jb",
+    ">=" : "jbe",
+    "<=" : "jae",
+    ">"  : "jb",
+    "<"  : "ja",
 }
 
 type_num = {
@@ -49,6 +54,8 @@ spec_char_to_num = {
 
 data_size = {
     "float" : 8,
+
+    "tword" : 10,
     "qword" : 8,
     "dword" : 4,
     "word"  : 2,
@@ -56,6 +63,7 @@ data_size = {
 }
 
 rdata_size = {
+    10 : "tword",
     8 : "qword",
     4 : "dword",
     2 : "word",
@@ -65,7 +73,7 @@ rdata_size = {
 #skips lines with no data
 syntax_nothing = re.compile(r"[ \t]+")
 syntax_split = re.compile(r";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^{]*\})")
-var_search = lambda name: re.compile(rf"[ \t]*({name}:.*|{name}[ \t]+(db|dw|dd|dq)[ \t]+.*)")
+var_search = lambda name: re.compile(rf"[ \t]*({name}(:){0,1}[ \t]+(db|dw|dd|dq)[ \t]+.*)")
 func_search = lambda name: re.compile(rf"[ \t]*{name}:.*")
 
 #coms
@@ -82,7 +90,7 @@ spec_char = re.compile(r'\\+[n|t]')
 syntax_int_data         = re.compile(r"[ \t]*(byte|word|dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+.+")
 syntax_int_data_no_args = re.compile(r"[ \t]*(byte|word|dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*(,[ \t]+[a-z|A-Z|_][\w|\.]*)*[ \t]*")
 syntax_res_int_data     = re.compile(r"[ \t]*RES[ \t]+(byte|word|dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*\[.+\][ \t]*")
-syntax_float            = re.compile(r"[ \t]*float[ \t]+(dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+.+[ \t]*")
+syntax_float            = re.compile(r"[ \t]*(float|double|extended)[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+.+[ \t]*")
 syntax_list             = re.compile(
     r"[ \t]*list[ \t]+(byte|word|dword|qword)[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+\[(.*\,[ ]*)*.*\][ \t]*")
 syntax_string           = re.compile(r"[ \t]*string[ \t]+[a-z|A-Z|_][\w|\.]*[ \t]+=[ \t]+\".*\"[ \t]*")
@@ -122,6 +130,8 @@ syntax_return              = re.compile(r'[ \t]*return[ \t]*')
 syntax_bits                = re.compile(r'[ \t]*#BITS[ \t]+(16|32|64)[ \t]*')
 
 #imath
+syntax_add_instr  = re.compile(r"[ \t]add[ \t]+.*,.*")
+syntax_sub_instr  = re.compile(r"[ \t]sub[ \t]+.*,.*")
 syntax_add        = re.compile(r"[ \t]*.*\+=.*")
 syntax_sub        = re.compile(r"[ \t]*.*-=.*")
 syntax_macro_div  = re.compile(r"[ \t]*.*/=.*")
@@ -139,9 +149,10 @@ syntax_fsub         = re.compile(r"[ \t]*fsub .*, .*, .*")
 syntax_fdiv         = re.compile(r"[ \t]*fdiv .*, .*, .*")
 syntax_fmul         = re.compile(r"[ \t]*fmul .*, .*, .*")
 syntax_float_to_int = re.compile(r"[ \t]*fti .*, .*")
+syntax_int_to_float = re.compile(r"[ \t]*itf .*, .*")
 syntax_int_conv     = re.compile(r"[ \t]*int .*")
 syntax_float_conv   = re.compile(r"[ \t]*float .*")
-
+syntax_convto       = re.compile(r"[ \t]*convto[ \t]+(float|double|int)[ \t]+.+")
 
 reg_list = ['rax', 'rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9']
 #if
@@ -149,10 +160,16 @@ _else  = re.compile(r"\belse\b")
 _float = re.compile(r"\bfloat\b")
 _cond  = re.compile(r"(.+)")
 _comb  = re.compile(r"(==|!=|>=|<=|>|<)")
-_regs  = re.compile(r"\b(rbp|ebp|bp|es|fs|gs|ss|rax|eax|rbx|ebx|rcx|ecx|rdx|edx|rsp|esp|sp|rsi|esi|si|rdi|edi|di|(a|b|c|d)(x|h|l))\b")
+_regs  = re.compile(r"[^[]*\b(rbp|ebp|bp|es|fs|gs|ss|rax|eax|rbx|ebx|rcx|ecx|rdx|edx|rsp|esp|sp|rsi|esi|si|rdi|edi|di|(a|b|c|d)(x|h|l))\b[^]]*")
 #imath
 ops = re.compile(r"(\+=|-=|\*=|/=|//=|%=)")
 dsize = re.compile(r"(byte|word|dword|qword)")
+_float_num = re.compile(r"\b[0-9]+\.[0-9]+\b")
+_int_num   = re.compile(r"\b([0-9abcdefABCDEF]+h|0x[0-9abcdefABCDEF]+|[0-9]+)\b")
+_q = re.compile(r"[^[]*\b(r[abcd]x|r(si|di|sp|bp)|r(8|9|10|11|12|13|14|15))\b[^]]*")
+_d = re.compile(r"[^[]*\b(e[abcd]x|e(si|di|sp|bp))\b[^]]*")
+#float
+_float_types = re.compile(r"\b(float|double|extended)\b")
 #data func
 def _syntax_int_data(string, translator, c):
     """
@@ -252,23 +269,61 @@ def _syntax_const(string, translator, c):
 
 def _syntax_float(string, translator, c):
     """ 
-        float (qword|dword) *name* = *value*
+        float/double/extended *name* = *value*
         
-        makes float variable
+        makes float/double/extended variable
     
     """
     translator.write_to_data(f"; [{c}]: {string}")
 
-    type = string.split("float")[1].split()[0]
-    data = types[type]
-    name = string.split("float ")[1].split()[1]
+    tn, value = string.split("=", 1)
+    type, name = _float_types.search(tn).group(), re.compile(r"\b(float|double|extended)\b").sub("", tn)
+    type = "".join(type.split())
+    
+    translator.check_name("".join(name.split()))
+    translator.vars.append("".join(name.split()))
+
+    if not if_float(value):
+        valueError(c, f"{value} is not a float number")
+    translator.write_to_data(f"{name} {types[type]} {value}")
+
+def _syntax_double(string, translator, c):
+    """ 
+        double *name* = *value*
+        
+        makes double (dq) variable
+    
+    """
+    translator.write_to_data(f"; [{c}]: {string}")
+
+    name = string.split("double")[1].split()[0]
+    value = string.split("=")[1]
+    
+    translator.check_name("".join(name.split()))
+    translator.vars.append("".join(name.split()))
+    
+    if not if_float(value):
+        valueError(c, f"{value} is not a float number")
+    translator.write_to_data(f"{name} dq {value}")
+
+def _syntax_extended(string, translator, c):
+    """ 
+        extended *name* = *value*
+        
+        makes extended (dt) variable
+    
+    """
+    translator.write_to_data(f"; [{c}]: {string}")
+
+    name = string.split("extended")[1].split()[0]
     value = string.split("=")[1]
     
     translator.check_name("".join(name.split()))
     translator.vars.append("".join(name.split()))
 
-    translator.write_to_data(f"{name} {data} {value}")
-
+    if not if_float(value):
+        valueError(c, f"{value} is not a float number")
+    translator.write_to_data(f"{name} dt {value}")
 
 def _syntax_list(string, translator, c):
     """
@@ -592,6 +647,7 @@ def _syntax_if(string, translator, line):
             ...;
         };
     """
+    size = "qword" if translator.set_bits == 0 or translator.set_bits == 64 else "dword"
     translator.cc += 1
     l = 0
     blocks = []
@@ -622,25 +678,37 @@ def _syntax_if(string, translator, line):
             syntaxError(line, f"Invalid format {c}")
         c = c.group()[1:len(c.group())-1]
         m = _comb.search(c)
-        if not m:
-            syntaxError(line, f"Invalid condition {c}")
+        if m:
+            c = c.split("{", 1)[0].replace("if", "").replace("(", "").replace(")", "")
+            a,b = c.split(m.group())
+            f = _float.search(a), _float.search(b)
+            if f[0] or f[1]:
+                if _regs.search(a.lower()) or _regs.search(b.lower()):
+                    expressionWarning(line, f"register cannot be used as a value in float comparament (can be used as []) ({c})")
 
-        c = c.split("{", 1)[0].replace("if", "").replace("(", "").replace(")", "")
-        a,b = c.split(m.group())
-        f = _float.search(a), _float.search(b)
-        i = 8
-        if f[0] or f[1]:
-            if _regs.search(a.lower()) or _regs.search(b.lower()):
-                valueError(line, f"register cannot be used in float comparament ({c})")
 
-            translator.write_to_text(f"fld {b.split('float', 1)[1]}" if f[1] else f"fild {b}")
-            translator.write_to_text(f"fld {a.split('float', 1)[1]}" if f[0] else f"fild {a}")
-            translator.write_to_text("fcomi st0, st1")
-            translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{translator.cc}")
-        else:
-            translator.write_to_text(f"cmp {a}, {b} ; {c}")
-            translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{translator.cc}")
-    
+                try:
+                    int(a)
+                    translator.write_to_text(f"mov {size} [__used_for_nums], {a.split('float', 1)[1] if f[0] else a}")
+                    translator.write_to_text(f"fld {size} [__used_for_nums]" if f[0] else f"fild {size} [__used_for_nums]")
+                except:
+                    translator.write_to_text(f"fld {a.split('float', 1)[1]}" if f[0] else f"fild {a}")
+
+                try:
+                    int(b)
+                    translator.write_to_text(f"mov {size} [__used_for_nums], {b.split('float', 1)[1] if f[1] else b}")
+                    translator.write_to_text(f"fld {size} [__used_for_nums]" if f[1] else f"fild {size} [__used_for_nums]")
+                except Exception as e:
+                    print(e)
+                    translator.write_to_text(f"fld {b.split('float', 1)[1]}" if f[1] else f"fild {b}")
+
+
+                translator.write_to_text("fcomi st0, st1")
+                translator.write_to_text(f"{fconditions[m.group()]} _if_construction{z}_{translator.cc}")
+            else:
+                translator.write_to_text(f"cmp {a}, {b} ; {c}")
+                translator.write_to_text(f"{conditions[m.group()]} _if_construction{z}_{translator.cc}")
+        
     if not noelse:
         ToASM(_else_block.split("{", 1)[1][::-1].split("}", 1)[1][::-1], translator)
     translator.write_to_text(f"jmp _if_construction{translator.cc}_end")
@@ -770,176 +838,377 @@ def _syntax_while(string, translator, c):
 def _syntax_imath(string, translator, c):
     """
 
-+=|-=|*=|/=|//=|%=
-+=  add<br />
--=  sub<br />
-*=  mul<br />
-/=  div (returns float)<br />
-//= div (returns int)<br />
-%=  div (returns remainder)<br /><br />
-Also, add *float* before value, to use float functions<br />
-Examples:<br />
-    dword [a] += dword [b] (returns int)<br />
-    float dword [a] -= dword [b] (returns float)
-<br />
-    dword [a] /= dword [b] (returns float)<br />
-    dword [a] //= dword [b] (returns int)<br />
-    dword [a] %= dword [b] (returns remainder)<br />
-**BUT**<br />
-Using floats with %= is forbidden
+    +=|-=|*=|/=|//=|%=
+    +=  add<br />
+    -=  sub<br />
+    *=  mul<br />
+    /=  div (returns float)<br />
+    //= div (returns int)<br />
+    %=  div (returns remainder)<br /><br />
+    Also, add *float* before value, to use float functions<br />
+    Examples:<br />
+        dword [a] += dword [b] (returns int)<br />
+        float dword [a] -= dword [b] (returns float)
+    <br />
+        dword [a] /= dword [b] (returns float)<br />
+        dword [a] //= dword [b] (returns int)<br />
+        dword [a] %= dword [b] (returns remainder)<br />
+    **BUT**<br />
+    Using floats with %= is forbidden
 
     """
+    size = "qword" if translator.set_bits == 0 or translator.set_bits == 64 else "dword"
     _float = re.compile(r'\bfloat\b')
     translator.write_to_text(f"; [{c}]: {string}")
+    fn = False
 
     a, op, b = ops.split(string, 1)
     A, B = _float.search(a), _float.search(b)
+    """    if _regs.match(a) and _regs.match(b):
+
+            if op == "+=":
+                translator.write_to_text(f"add {a}, {b}")
+            elif op == "-=":
+                translator.write_to_text(f"sub {a}, {b}")
+    """
+
+    if _float_num.search(b):
+        B = True
+        fn = True
+        b = "".join(b.split())
     _float = A or B
     a = a.replace("float", "", 1)
     b = b.replace("float", "", 1)
+    tw = ()
+
+
+    if _float:
+        try:
+            float(a)
+            expressionError(c, "Expression error")
+        except:
+            pass
+        try:
+            if re.compile(r"\b([0-9abcdefABCDEF]+h|0x[0-9abcdefABCDEF]+|[0-9]+(\.[0-9]+){0,1})\b").search(b):
+                if fn:
+                    hex = double_to_hex(float(b))[2:]
+                    hex = hex[:8], hex[8:]
+                    if size == "qword":
+                        tw = (f"mov dword [__used_for_nums+4], 0x{hex[0]}", f"mov dword [__used_for_nums], 0x{hex[1]}")
+                    else:
+                        tw = (f"mov dword [__used_for_nums], {float_to_hex(float(b))}")
+                else:
+                    tw = (f"mov {size} [__used_for_nums], {b}", )
+                _b = b
+                b = f"{size} [__used_for_nums]"
+        except Exception as e:
+            print(e)
 
     x = [z.group() for z in dsize.finditer(string)]
 
-    regx = rax_size[x[0]]
-    regy = rax_size[x[0]].replace('a', 'b') if len(x) == 1 else rax_size[x[1]].replace('a', 'b')
+    if len(x) >= 1:
+        regx = rax_size[x[0]]
+        regy = rax_size[x[0]].replace('a', 'b') if len(x) == 1 else rax_size[x[1]].replace('a', 'b')
 
+    else:
+        regx = rax_size[size]
+        regy = rax_size[size].replace('a', 'b')
 
     if translator.set_bits == 0:
-        d, e = data_size[x[0]]*8 > translator.set_bits, data_size[x[1]]*8 > translator.set_bits
-        if d or e:
-            dataSizeError(c, f"{x[0] if d else x[1]} is too big for {translator.set_bits}-bits registers", f"#BITS {translator.set_bits} has been used")
-        
-        _pa = "rax"
-        _pb = "rbx"
+        if len(x) > 0:
+            d, e = data_size[x[0]]*8 > translator.set_bits, (data_size[x[1]]*8 > translator.set_bits if len(x) > 1 else data_size[x[0]]*8)
+            if d or e:
+                dataSizeError(c, f"{x[0] if d else x[1]} is too big for {translator.set_bits}-bits registers", f"#BITS {translator.set_bits} has been used")
+            
         _pd = "rdx"
     else:
-        _pa = rax_size[rdata_size[translator.set_bits/8]]
-        _pb = _pa.replace("a", "b")
-        _pd = _pa.replace("a", "d")
+        _pd = rax_size[rdata_size[translator.set_bits//8]].replace("a", "d")
 
 
     if op == "+=":
+        qa, da, qb, db = (
+            _q.search(a),
+            _d.search(a),
+            _q.search(b),
+            _d.search(b)
+            )
         if _float:
-            if A:
-                translator.write_to_text(f"fld {a}")
-            else:
-                translator.write_to_text(f"fild {a}")
 
-            if B:
-                translator.write_to_text(f"fld {b}")
-            else:
-                translator.write_to_text(f"fild {b}")
+            if qa:
+                translator.write_to_text(f"mov qword [__used_for_nums], {a}")
+                translator.write_to_text(f"fld qword [__used_for_nums]" if A else f"fild qword [__used_for_nums]")
+                reg = True
+                regs = "q"
+            elif da:
+                translator.write_to_text(f"mov dword [__used_for_nums], {a}")
+                translator.write_to_text(f"fld dword [__used_for_nums]" if A else f"fild dword [__used_for_nums]")
+                reg = True
+                regs = "d"
 
-            translator.write_to_text(f"fadd\nfstp "+ a)
+            if qb:
+                translator.write_to_text(f"mov qword [__used_for_nums], {b}")
+                translator.write_to_text(f"fld qword [__used_for_nums]" if B else f"fild qword [__used_for_nums]")
+                reg = True
+            elif db:
+                translator.write_to_text(f"mov dword [__used_for_nums], {b}")
+                translator.write_to_text(f"fld dword [__used_for_nums]" if B else f"fild dword [__used_for_nums]")
+                reg = True
+
+            translator.write_to_text(f"fadd\nfstp " + (f"qword [__used_for_nums]\nmov {a}, qword [__used_for_nums]" if regs == "q" else f"dword [__used_for_nums]\nmov {a}, dword [__used_for_nums]"))
 
         else:
             if len(x) > 1:
                 translator.write_to_text(f"""
-    push {_pa}")
+    push {regx}")
     mov {regx}, {b}
     add {a}, {regx}
-    pop {_pa}""")
+    pop {regx}""")
 
             else:
                 translator.write_to_text(f"add {a}, {b}")
 
     elif op == "-=":
+        qa, da, qb, db = (
+            _q.search(a),
+            _d.search(a),
+            _q.search(b),
+            _d.search(b)
+            )
         if _float:
-            if A:
-                translator.write_to_text(f"fld {a}")
-            else:
-                translator.write_to_text(f"fild {a}")
 
-            if B:
-                translator.write_to_text(f"fld {b}")
-            else:
-                translator.write_to_text(f"fild {b}")
+            if qa:
+                translator.write_to_text(f"mov qword [__used_for_nums], {a}")
+                translator.write_to_text(f"fld qword [__used_for_nums]" if A else f"fild qword [__used_for_nums]")
+                reg = True
+                regs = "q"
+            elif da:
+                translator.write_to_text(f"mov dword [__used_for_nums], {a}")
+                translator.write_to_text(f"fld dword [__used_for_nums]" if A else f"fild dword [__used_for_nums]")
+                reg = True
+                regs = "d"
 
-            translator.write_to_text(f"fsub\nfstp " + a)
+            if qb:
+                translator.write_to_text(f"mov qword [__used_for_nums], {b}")
+                translator.write_to_text(f"fld qword [__used_for_nums]" if B else f"fild qword [__used_for_nums]")
+                reg = True
+            elif db:
+                translator.write_to_text(f"mov dword [__used_for_nums], {b}")
+                translator.write_to_text(f"fld dword [__used_for_nums]" if B else f"fild dword [__used_for_nums]")
+                reg = True
+
+            translator.write_to_text(f"fsub\nfstp " + (f"qword [__used_for_nums]\nmov {a}, qword [__used_for_nums]" if regs == "q" else f"dword [__used_for_nums]\nmov {a}, dword [__used_for_nums]"))
 
         else:
             if len(x) > 1:
                 translator.write_to_text(f"""
-    push {_pa}")
-    mov {regx}, {b}")
-    sub {a}, {regx}")
-    pop {_pa}""")
+    push {regx}
+    mov {regx}, {b}
+    sub {a}, {regx}
+    pop {regx}""")
 
             else:
                 translator.write_to_text(f"sub {a}, {b}")
 
     elif op == "*=":
         if not _float:
-            
-            translator.write_to_text(f"""
-    push {_pa}
-    push {_pb}
+            if len(x) > 1:
+                translator.write_to_text(f"""
+    push {regx}
+    push {regy}
     push {_pd}
-    mov {_pa}, 0
-    mov {_pb}, 0
+    mov {regx}, 0
+    mov {regy}, 0
     mov {_pd}, 0
-    mov {regx}, {a}
-    mov {regy}, {b}
-    mul {_pb}
+    {f'mov {regx}, {a}' if regx != a else ''}
+    {f'mov {regy}, {b}' if regy != b else ''}
+    mul {regy}
     mov {a}, {regx}
     pop {_pd}
-    pop {_pb}
-    pop {_pa}""")
+    pop {regy}
+    pop {regx}""")
+            else:
+                a = ''.join(a.split())
+                b = ''.join(b.split())
+                A = regx != a
+                B = regy != a
+                D = _pd != a
+
+
+                translator.write_to_text(f"""
+    {f'push {_pd}' if D else ''}
+    {f'push {regx}' if A else ''}
+    {f'push {regy}' if B else ''}
+
+    push {a}
+    push {b}
+    pop {regy}
+    pop {regx}
+    mov {_pd}, 0
+
+    mul {regy}
+    {f'mov {a}, {regx}' if A else ''}
+    {f'pop {regy}' if B else ''}
+    {f'pop {regx}' if A else ''}
+    {f'pop {_pd}' if D else ''}
+""")
+
+
         else:
             translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+            for x in tw:
+                translator.write_to_text(x)
             translator.write_to_text(f"fld {b}" if B else f"fild {b}")
 
             translator.write_to_text(f"fmul\nfstp " + a)
 
     elif op == "//=":
         if not _float:
-            translator.write_to_text(f"""
-    push {_pa}
-    push {_pb}
+            if len(x) > 1:
+                translator.write_to_text(f"""
+    push {regx}
+    push {regy}
     push {_pd}
-    mov {_pa}, 0
-    mov {_pb}, 0
+    {f'mov {regx}, {a}' if regx != a else ''}
+    {f'mov {regy}, {b}' if regy != b else ''}
     mov {_pd}, 0
-    mov {regx}, {a}
-    mov {regy}, {b}
-    div {_pb}
+    div {regy}
     mov {a}, {regx}
     pop {_pd}
-    pop {_pb}
-    pop {_pa}""")
+    pop {regy}
+    pop {regx}""")
+            else:
+                a = ''.join(a.split())
+                b = ''.join(b.split())
+                
+                A = regx != a
+                B = regy != a
+                D = _pd != a
+
+
+                translator.write_to_text(f"""
+    {f'push {_pd}' if D else ''}
+    {f'push {regx}' if A else ''}
+    {f'push {regy}' if B else ''}
+
+    push {a}
+    push {b}
+    pop {regy}
+    pop {regx}
+    mov {_pd}, 0
+
+    div {regy}
+    {f'mov {a}, {regx}' if A else ''}
+    {f'pop {regy}' if B else ''}
+    {f'pop {regx}' if A else ''}
+    {f'pop {_pd}' if D else ''}
+""")
+
 
         else:
             translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+            for x in tw:
+                translator.write_to_text(x)
             translator.write_to_text(f"fld {b}" if B else f"fild {b}")
             
             translator.write_to_text(f"fdiv\nfistp " + a)
 
     elif op == "%=":
         if not _float:
-            translator.write_to_text(f"""
-    push {_pa}
-    push {_pb}
+            if len(x) > 1:
+                translator.write_to_text(f"""
+    push {regx}
+    push {regy}
     push {_pd}
-    mov {_pa}, 0
-    mov {_pb}, 0
+    mov {regx}, 0
+    mov {regy}, 0
+    {f'mov {regx}, {a}' if regx != a else ''}
+    {f'mov {regy}, {b}' if regy != b else ''}
     mov {_pd}, 0
-    mov {regx}, {a}
-    mov {regy}, {b}
-    div {_pb}
+    div {regy}
     mov {a}, {regx.replace('a', 'd')}
     pop {_pd}
-    pop {_pb}
-    pop {_pa}""")
+    pop {regy}
+    pop {regx}""")
+            else:
+                a = ''.join(a.split())
+                b = ''.join(b.split())
+                A = regx != a
+                B = regy != a
+                D = _pd != a
+
+
+                translator.write_to_text(f"""
+    {f'push {_pd}' if D else ''}
+    {f'push {regx}' if A else ''}
+    {f'push {regy}' if B else ''}
+
+    push {a}
+    push {b}
+    pop {regy}
+    pop {regx}
+    mov {_pd}, 0
+
+    div {regy}
+    {f'mov {a}, {_pd}' if D else ''}
+    {f'pop {regy}' if B else ''}
+    {f'pop {regx}' if A else ''}
+    {f'pop {_pd}' if D else ''}
+""")
         else:
             syntaxError(c, "Cannot use float operand to get remainder (use fti if it's required)")
 
     elif op == "/=":
 
-        translator.write_to_text(f"fld {a}" if A else f"fild {a}")
-        translator.write_to_text(f"fld {b}" if B else f"fild {b}")
-        
-        translator.write_to_text(f"fdiv\nfstp " + a)
+        qa, da, qb, db = (
+            _q.search(a),
+            _d.search(a),
+            _q.search(b),
+            _d.search(b)
+            )
 
+
+        reg = False
+
+        if qa:
+            translator.write_to_text(f"mov qword [__used_for_nums], {a}")
+            translator.write_to_text(f"fld qword [__used_for_nums]" if A else f"fild qword [__used_for_nums]")
+            reg = True
+            regs = "qword"
+            print(1)
+        elif da:
+            translator.write_to_text(f"mov dword [__used_for_nums], {a}")
+            translator.write_to_text(f"fld dword [__used_for_nums]" if A else f"fild dword [__used_for_nums]")
+            reg = True
+            regs = "dword"
+
+        else:
+            if _int_num.search(a) or _regs.search(a):
+                translator.write_to_text(f"mov {size} [__used_for_nums], {a}")
+                translator.write_to_text(f"fld {size} [__used_for_nums]" if A else f"fild {size} [__used_for_nums]")
+
+            else:
+                translator.write_to_text(f"fld {a}" if A else f"fild {a}")
+        
+        if qb:
+            translator.write_to_text(f"mov qword [__used_for_nums], {b}")
+            translator.write_to_text(f"fld qword [__used_for_nums]" if B else f"fild qword [__used_for_nums]")
+        elif db:
+            translator.write_to_text(f"mov dword [__used_for_nums], {b}")
+            translator.write_to_text(f"fld dword [__used_for_nums]" if B else f"fild dword [__used_for_nums]")
+
+        else:
+            for x in tw:
+                translator.write_to_text(x)
+            if tw:
+                translator.write_to_text(f"fld {size} [__used_for_nums]" if B else f"fild {size} [__used_for_nums]")
+            else:
+                translator.write_to_text(f"fld {b}" if B else f"fild {b}")
+        
+        translator.write_to_text("fdiv")
+        if reg:
+            translator.write_to_text(f"fstp {regs} [__used_for_nums]\nmov {a}, {regs} [__used_for_nums]")
+        else:
+            translator.write_to_text(f"fstp {a}")
 
 
 def _syntax_shift(string, translator, c):
@@ -1076,6 +1345,88 @@ def _syntax_float_to_int(string, translator, c):
     translator.write_to_text(f"fld {name}")
     translator.write_to_text(f"fistp {dest}")
 
+def _syntax_int_to_float(string, translator, c):
+    """ 
+        itf qword [*name*]
+        itf - Int To Float
+        
+        converts int to float
+    """
+    translator.write_to_text(f"; [{c}]: {string}")
+
+    name, dest = string.split("itf ")[1].split(", ")
+    translator.write_to_text(f"fild {name}")
+    translator.write_to_text(f"fstp {dest}")
+
+def _syntax_convto(string, translator, c):
+    """
+    convto float *size* [x]
+    convto double *size* [x]
+    convto int *size* [x]
+
+    convto float rax
+    convto double eax
+    convto int (rax/eax)
+    """
+    translator.write_to_text(f"; [{c}]: {string}")
+
+    t, n = string.split("convto", 1)[1].split(maxsplit=1)
+    i = False
+    r = _q.search(n), _d.search(n)
+
+    if syntax_int_conv.search(n):
+        n = n.replace("int", "", 1)
+        i = True
+
+    if r[0]:
+        r = True, r[0].group(), "qword"
+
+    elif r[1]:
+        r = True, r[1].group(), "dword"
+
+    if t == "float":
+        if r[0]:
+            translator.write_to_text(f"""
+            mov [__used_for_nums], {r[1]}
+            {'fild' if i else 'fld'} {r[2]} [__used_for_nums]
+            """)
+
+        else:
+            translator.write_to_text(f"{'fild' if i else 'fld'} {n}")
+        translator.write_to_text(f"""
+        fstp dword [__used_for_nums]
+        mov eax, [__used_for_nums]
+        """)
+
+    elif t == "double":
+        if r[0]:
+            translator.write_to_text(f"""
+            mov [__used_for_nums], {r[1]}
+            {'fild' if i else 'fld'} {r[2]} [__used_for_nums]
+            """)
+
+        else:
+            translator.write_to_text(f"{'fild' if i else 'fld'} {n}")
+
+        translator.write_to_text(f"""
+        fstp qword [__used_for_nums]
+        mov rax, [__used_for_nums]
+        """)
+
+    elif t == "int":
+        if r[0]:
+            translator.write_to_text(f"""
+            mov [__used_for_nums], {r[1]}
+            {'fild' if i else 'fld'} {r[2]} [__used_for_nums]
+            """)
+
+        else:
+            translator.write_to_text(f"{'fild' if i else 'fld'} {n}")
+
+        translator.write_to_text(f"""
+        fistp qword [__used_for_nums]
+        mov rax, [__used_for_nums]
+        """)
 
 syntax = {
     #data
@@ -1114,6 +1465,8 @@ syntax = {
     syntax_pushpop_aq : _syntax_pushpop_aq,
     
     #math
+    syntax_add_instr  : _clean_asm_text,
+    syntax_sub_instr  : _clean_asm_text,
     syntax_add        : _syntax_imath,
     syntax_sub        : _syntax_imath,
     syntax_macro_idiv : _syntax_imath,
@@ -1127,12 +1480,22 @@ syntax = {
     syntax_shift      : _syntax_shift,
 
     #fmath
-    syntax_float_to_int : _syntax_float_to_int,
+    syntax_convto : _syntax_convto,
 
     syntax_fadd : _syntax_fadd,
     syntax_fsub : _syntax_fsub,
     syntax_fmul : _syntax_fmul,
     syntax_fdiv : _syntax_fdiv,
+
+}
+
+
+def _macros_not_defined_array():
+    pass
+
+macros = {
+    syntax_not_defined_array : 0,
+    syntax_not_defined_string : 0,
 }
 
 def rep_spec_chars(value):
@@ -1164,22 +1527,34 @@ def split(text, char):
     matches  = []
 
     before = -1
+    comm = False
 
     for c, i in enumerate(text):
-        if i == "\"":
-            quotes = 0 if quotes else 1
-        elif not quotes:
-            if i == "{":
-                brackets += 1
-            elif i == "}":
-                brackets -= 1
-            elif i == char:
+        if comm:
+            if i == "*":
+                if len(text) > c:
+                    if text[c+1] == "/":
+                        comm = False
+                        before = c+1
+        else:
+            if i == "\"" and not text[c-1] == "\\":
+                quotes = 0 if quotes else 1
+            elif not quotes:
+                if i == "{":
+                    brackets += 1
+                elif i == "}":
+                    brackets -= 1
                 if not brackets:
-                    matches.append(text[before+1:c])
-                    before = c
+                    if i == char and not brackets:
+                        matches.append(text[before+1:c])
+                        before = c
+                    elif i == "/":
+                        if len(text) > c:
+                            if text[c+1] == "*":
+                                comm = True
     return matches
 
-def ToASM(lines, translator, _syntax=syntax):
+def ToASM(lines, translator, _syntax=syntax, print_lines = False):
     
     _lines = lines.split("\n")
 
@@ -1191,8 +1566,8 @@ def ToASM(lines, translator, _syntax=syntax):
             #if line is fullmatches(r"[ \t]*") -> skipping line
             continue
 
-
-        print(f"[{translator.c}]: {' '*(translator.lines_len - len(str(translator.c)))}{line}")
+        if translator.print_lines:
+            print(f"[{translator.c}]: {' '*(translator.lines_len - len(str(translator.c)))}{line}")
 
         if syntax_not_defined_string.search(line):
             for i in syntax_not_defined_string.finditer(line):
@@ -1278,3 +1653,12 @@ def ToASM(lines, translator, _syntax=syntax):
             syntaxError(translator.c, f"Syntax error in line", line)
 
         translator.check_all_names()
+
+
+def float_to_hex(f):
+    return hex(struct.unpack('<I', struct.pack('<f', f))[0])
+def double_to_hex(f):
+    return hex(struct.unpack('<Q', struct.pack('<d', f))[0])
+
+def if_float(s):
+    return True if _float_num.search(s) else False 
