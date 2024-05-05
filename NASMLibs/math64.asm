@@ -96,12 +96,13 @@ math.ctg:
         push rax
         push rdx
         call math.sin
+        push rax
         fld qword [rsp+8]
         fld qword [rsp]
         fdiv
         fstp qword [rsp]
         mov rax, qword [rsp]
-        add rsp, 24
+        add rsp, 16
         ret 8
 ;;endfunc
 
@@ -298,7 +299,7 @@ math.avgq:
         ret 8*2
 
 ;;endfunc
-avgd:
+math.avgd:
         ; math.avgd(array[dword int], len) -> dword float
         push rbp
         mov rbp, rsp
